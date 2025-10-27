@@ -78,32 +78,35 @@ jobs:
           # (중요) 이 'script:' 블록 전체를 아래 내용으로 교체하세요
           # --------------------------------------------------- #
           script: |
+            # (중요!) 오류가 발생해도 스크립트가 중단되지 않도록 설정
+            set +e
+            
             echo "--- 1. 배포 스크립트 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd $APP_DIR
-
-            # 2. 새 .jar 파일 이름 찾기
+            
+            echo "--- 2. 새 .jar 파일 이름 찾기 ---"
             JAR_FILE=$(find . -name "*.jar" | head -n 1)
             if [ -z "$JAR_FILE" ]; then
               echo "오류: .jar 파일을 찾을 수 없습니다."
               exit 1
             fi
             echo "배포할 파일: $JAR_FILE"
-
-            # 3. 기존 실행 중인 PID 찾기 (프로세스가 없어도 에러 내지 않음)
+            
+            echo "--- 3. 기존 실행 중인 PID 찾기 ---"
             PID=$(pgrep -f "java -jar") || true
-
-            # 4. 기존 프로세스 종료
+            
+            echo "--- 4. 기존 프로세스 종료 ---"
             if [ -n "$PID" ]; then
               echo "기존 서버 종료 (PID: $PID)"
-
+            
               # 143 종료 코드를 무시하기 위해 '|| true' 사용
               kill -15 $PID || true
-
+            
               # 10초 대기
               sleep 10
-
-              # 5. (백업) 10초 후에도 살아있으면 강제 종료 (kill -9)
+            
+              echo "--- 5. (백업) 10초 후에도 살아있는지 확인 ---"
               if ps -p $PID > /dev/null; then
                  echo "서버가 10초 후에도 종료되지 않았습니다. 강제 종료 (kill -9) 시도."
                  kill -9 $PID || true
@@ -112,13 +115,16 @@ jobs:
             else
               echo "실행 중인 기존 서버가 없습니다."
             fi
-
-            # 6. 환경 변수(Secrets) 주입 및 새 서버 실행
-            echo "--- 7. 새 서버 시작 ---"
+            
+            # (중요!) 여기서부터는 다시 오류 시 중단 모드로 변경
+            set -e
+            
+            echo "--- 6. 환경 변수(Secrets) 주입 ---"
             export DB_URL=${{ secrets.DB_URL }}
             export DB_USERNAME=${{ secrets.DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-
+            
+            echo "--- 7. 새 서버 시작 ---"
             nohup java -jar $JAR_FILE > $APP_DIR/server.log 2>&1 &
-
+            
             echo "--- 8. 배포 스크립트 완료 ---"
