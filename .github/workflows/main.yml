@@ -78,44 +78,43 @@ jobs:
           # (중요) 이 'script:' 블록 전체를 아래 내용으로 교체하세요
           # --------------------------------------------------- #
           script: |
-            # (중요!) 오류가 발생해도 스크립트가 중단되지 않도록 설정
-            set +e
-            
-            echo "--- 1. 배포 스크립트 시작 ---"
+            set -euxo pipefail
+            echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
-            cd $APP_DIR
-            
-            echo "--- 2. 새 .jar 파일 이름 찾기 (plain.jar 제외) ---"
-            # find로 .jar를 찾되, grep -v 'plain'으로 plain.jar를 제외함
-            JAR_FILE=$(find . -name "*.jar" | grep -v 'plain' | head -n 1)
-            
+            cd "$APP_DIR"
+
+            echo "--- 새 .jar 찾기 (plain 제외) ---"
+            JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
             if [ -z "$JAR_FILE" ]; then
               echo "오류: 실행 가능한 .jar 파일을 찾을 수 없습니다."
               exit 1
             fi
             echo "배포할 파일: $JAR_FILE"
-            
-            echo "--- 3. 기존 프로세스 종료 (pkill) ---"
-            # -f: 이름으로 찾기. 'java -jar'가 포함된 모든 프로세스를 찾음
-            # '|| true' : pkill이 프로세스를 못 찾거나(종료코드 1) 종료시켜도(종료코드 0) 에러 내지 않음
-            pkill -15 -f "java -jar" || true
-            echo "기존 서버 종료(pkill -15) 명령 전송 완료. 10초 대기."
-            sleep 10
-            
-            # (백업 강제 종료)
-            echo "--- 4. (백업) 강제 종료 (pkill -9) ---"
-            pkill -9 -f "java -jar" || true
-            sleep 2
-            
-            # (중요!) 여기서부터는 다시 오류 시 중단 모드로 변경
-            set -e
-            
-            echo "--- 5. 환경 변수(Secrets) 주입 ---"
-            export DB_URL=${{ secrets.DB_URL }}
-            export DB_USERNAME=${{ secrets.DB_USERNAME }}
-            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            
-            echo "--- 6. 새 서버 시작 ---"
-            nohup java -jar $JAR_FILE > $APP_DIR/server.log 2>&1 &
-            
-            echo "--- 7. 배포 스크립트 완료 ---"
+
+            echo "--- 기존 프로세스 PID 조회 (JAR 파일명 기준) ---"
+            # JAR 파일명만 추출
+            JAR_NAME=$(basename "$JAR_FILE")
+            PID=$(pgrep -f "$JAR_NAME" || true)
+            echo "찾은 PID: ${PID:-none}"
+
+            if [ -n "$PID" ]; then
+              echo "SIGTERM 보내기..."
+              kill -15 $PID || true
+              sleep 10
+              echo "강제 종료(SIGKILL) 시도..."
+              kill -9 $PID || true
+            fi
+
+            echo "--- 환경변수 주입 ---"
+            # secrets는 워크플로 YAML에서 미리 치환됩니다. (필요 시 작은따옴표로 감싸 안전하게)
+            export DB_URL='${{ secrets.DB_URL }}'
+            export DB_USERNAME='${{ secrets.DB_USERNAME }}'
+            export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+            echo "환경변수 설정 완료"
+
+            echo "--- 새 서버 시작 ---"
+            # 절대 경로로 java 사용, nohup + disown로 세션에 영향 주지 않음
+            nohup /usr/bin/java -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
+            disown
+            echo "서버 시작 명령 전송 완료. 로그: $APP_DIR/server.log"
+            echo "--- 배포 완료 ---"
