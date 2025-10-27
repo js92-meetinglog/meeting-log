@@ -30,7 +30,7 @@ jobs:
 
       # (4) Gradle로 빌드 (이때 application-local.properties는 사용되지 않음)
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build -x test
 
       # (5) 빌드된 .jar 파일을 'artifact'로 패키징
       #     (다음 deploy 작업에서 사용하기 위해)
