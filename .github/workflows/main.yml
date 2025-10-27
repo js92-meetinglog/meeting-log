@@ -86,7 +86,7 @@ jobs:
             PID=$(pgrep -f "java -jar")
             if [ -n "$PID" ]; then
               echo "Stopping existing server (PID: $PID)"
-              kill -15 $PID
+              kill -15 $PID || true
               sleep 10
             fi
 
