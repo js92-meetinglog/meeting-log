@@ -95,34 +95,27 @@ jobs:
             fi
             echo "배포할 파일: $JAR_FILE"
             
-            echo "--- 3. 기존 실행 중인 PID 찾기 ---"
-            PID=$(pgrep -f "java -jar") || true
+            echo "--- 3. 기존 프로세스 종료 (pkill) ---"
+            # -f: 이름으로 찾기. 'java -jar'가 포함된 모든 프로세스를 찾음
+            # '|| true' : pkill이 프로세스를 못 찾거나(종료코드 1) 종료시켜도(종료코드 0) 에러 내지 않음
+            pkill -15 -f "java -jar" || true
+            echo "기존 서버 종료(pkill -15) 명령 전송 완료. 10초 대기."
+            sleep 10
             
-            echo "--- 4. 기존 프로세스 종료 ---"
-            if [ -n "$PID" ]; then
-              echo "기존 서버 종료 (PID: $PID)"
-              kill -15 $PID || true
-              sleep 10
-            
-              echo "--- 5. (백업) 10초 후에도 살아있는지 확인 ---"
-              if ps -p $PID > /dev/null; then
-                 echo "서버가 10초 후에도 종료되지 않았습니다. 강제 종료 (kill -9) 시도."
-                 kill -9 $PID || true
-                 sleep 2
-              fi
-            else
-              echo "실행 중인 기존 서버가 없습니다."
-            fi
+            # (백업 강제 종료)
+            echo "--- 4. (백업) 강제 종료 (pkill -9) ---"
+            pkill -9 -f "java -jar" || true
+            sleep 2
             
             # (중요!) 여기서부터는 다시 오류 시 중단 모드로 변경
             set -e
             
-            echo "--- 6. 환경 변수(Secrets) 주입 ---"
+            echo "--- 5. 환경 변수(Secrets) 주입 ---"
             export DB_URL=${{ secrets.DB_URL }}
             export DB_USERNAME=${{ secrets.DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             
-            echo "--- 7. 새 서버 시작 ---"
+            echo "--- 6. 새 서버 시작 ---"
             nohup java -jar $JAR_FILE > $APP_DIR/server.log 2>&1 &
             
-            echo "--- 8. 배포 스크립트 완료 ---"
+            echo "--- 7. 배포 스크립트 완료 ---"
