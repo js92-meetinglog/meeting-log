@@ -83,16 +83,17 @@ jobs:
             cd /home/ubuntu/app
 
             # 3. 기존에 실행 중이던 Java 프로세스(서버) 종료
-            PID=$(pgrep -f "java -jar")
+            PID=$(pgrep -f "java -jar") || true
             if [ -n "$PID" ]; then
               echo "Stopping existing server (PID: $PID)"
               kill -15 $PID || true
               sleep 10
+            else
+            echo "No server running. Skipping kill."
             fi
 
             # 4. 새 .jar 파일 이름 찾기
+            cd /home/ubuntu/app
             JAR_FILE=$(find . -name "*.jar" | head -n 1)
-            
-            # 5. 새 .jar 파일을 백그라운드로 실행 (로그 파일 포함)
             echo "Starting new server: $JAR_FILE"
             nohup java -jar $JAR_FILE > /home/ubuntu/app/server.log 2>&1 &
