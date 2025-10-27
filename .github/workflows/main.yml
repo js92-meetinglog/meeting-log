@@ -85,10 +85,12 @@ jobs:
             APP_DIR="/home/ubuntu/app"
             cd $APP_DIR
             
-            echo "--- 2. 새 .jar 파일 이름 찾기 ---"
-            JAR_FILE=$(find . -name "*.jar" | head -n 1)
+            echo "--- 2. 새 .jar 파일 이름 찾기 (plain.jar 제외) ---"
+            # find로 .jar를 찾되, grep -v 'plain'으로 plain.jar를 제외함
+            JAR_FILE=$(find . -name "*.jar" | grep -v 'plain' | head -n 1)
+            
             if [ -z "$JAR_FILE" ]; then
-              echo "오류: .jar 파일을 찾을 수 없습니다."
+              echo "오류: 실행 가능한 .jar 파일을 찾을 수 없습니다."
               exit 1
             fi
             echo "배포할 파일: $JAR_FILE"
@@ -99,11 +101,7 @@ jobs:
             echo "--- 4. 기존 프로세스 종료 ---"
             if [ -n "$PID" ]; then
               echo "기존 서버 종료 (PID: $PID)"
-            
-              # 143 종료 코드를 무시하기 위해 '|| true' 사용
               kill -15 $PID || true
-            
-              # 10초 대기
               sleep 10
             
               echo "--- 5. (백업) 10초 후에도 살아있는지 확인 ---"
