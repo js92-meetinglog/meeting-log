@@ -1,0 +1,41 @@
+package org.example.meetinglog.config;
+
+import org.example.meetinglog.auth.service.KakaoOAuth2UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Autowired
+    private KakaoOAuth2UserService kakaoOAuth2UserService;
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/login", "/oauth2/**", "/login/oauth2/code/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard", true)
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(kakaoOAuth2UserService)
+                )
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+            );
+
+        return http.build();
+    }
+}
