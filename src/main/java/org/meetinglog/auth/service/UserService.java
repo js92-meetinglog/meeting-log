@@ -1,9 +1,9 @@
-package org.example.meetinglog.auth.service;
+package org.meetinglog.auth.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.meetinglog.auth.dto.KakaoUserInfo;
-import org.example.meetinglog.jpa.entity.User;
-import org.example.meetinglog.jpa.repository.UserRepository;
+import org.meetinglog.auth.dto.KakaoUserInfo;
+import org.meetinglog.jpa.entity.User;
+import org.meetinglog.jpa.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +19,7 @@ public class UserService {
     public User createOrUpdateUser(KakaoUserInfo kakaoUserInfo) {
         try {
             log.debug("Creating or updating user with KakaoUserInfo: {}", kakaoUserInfo.getId());
-            
+
             String kakaoId = kakaoUserInfo.getId().toString();
             String nickname = kakaoUserInfo.getKakao_account() != null &&
                              kakaoUserInfo.getKakao_account().getProfile() != null ?
@@ -54,7 +54,7 @@ public class UserService {
 
             log.info("User successfully created/updated: id={}, kakaoId={}", user.getId(), user.getKakaoId());
             return user;
-            
+
         } catch (Exception e) {
             log.error("Error creating or updating user with kakaoId: {}", kakaoUserInfo.getId(), e);
             throw e;

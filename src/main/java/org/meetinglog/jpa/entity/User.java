@@ -1,4 +1,4 @@
-package org.example.meetinglog.jpa.entity;
+package org.meetinglog.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

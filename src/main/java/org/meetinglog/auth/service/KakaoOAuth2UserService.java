@@ -1,9 +1,9 @@
-package org.example.meetinglog.auth.service;
+package org.meetinglog.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.example.meetinglog.auth.dto.KakaoUserInfo;
-import org.example.meetinglog.jpa.entity.User;
+import org.meetinglog.auth.dto.KakaoUserInfo;
+import org.meetinglog.jpa.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

@@ -1,4 +1,4 @@
-package org.example.meetinglog.auth.controller;
+package org.meetinglog.auth.controller;
 
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;

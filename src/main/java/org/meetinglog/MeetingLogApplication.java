@@ -1,4 +1,4 @@
-package org.example.meetinglog;
+package org.meetinglog;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package org.example.meetinglog.auth.dto;
+package org.meetinglog.auth.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
