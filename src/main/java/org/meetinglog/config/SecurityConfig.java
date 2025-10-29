@@ -18,24 +18,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/oauth2/**", "/login/oauth2/code/**").permitAll()
-                .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(kakaoOAuth2UserService)
-                )
-            )
-            .logout(logout -> logout
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
+            .authorizeHttpRequests(authorize -> authorize
+                    .requestMatchers("/**").permitAll() // 모든 경로(/**)를 허용
+                    .anyRequest().authenticated()
             );
+//            .csrf(csrf -> csrf.disable())
+//            .authorizeHttpRequests(auth -> auth
+//                .requestMatchers("/", "/login", "/oauth2/**", "/login/oauth2/code/**").permitAll()
+//                .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+//                .anyRequest().authenticated()
+//            )
+//            .oauth2Login(oauth2 -> oauth2
+//                .loginPage("/login")
+//                .defaultSuccessUrl("/dashboard", true)
+//                .userInfoEndpoint(userInfo -> userInfo
+//                    .userService(kakaoOAuth2UserService)
+//                )
+//            )
+//            .logout(logout -> logout
+//                .logoutSuccessUrl("/")
+//                .invalidateHttpSession(true)
+//                .clearAuthentication(true)
+//            );
 
         return http.build();
     }
