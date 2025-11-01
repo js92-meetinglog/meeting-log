@@ -74,14 +74,32 @@ jobs:
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_KEY }}
 
-          # --------------------------------------------------- #
-          # (중요) 이 'script:' 블록 전체를 아래 내용으로 교체하세요
-          # --------------------------------------------------- #
           script: |
             set -euxo pipefail
             echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd "$APP_DIR"
+            
+            # =========================================================
+            # ▼ Docker Compose: ES/Kibana 설정
+            # =========================================================
+            
+            echo "--- (신규) Docker: .env 파일 생성 (ES 비밀번호) ---"
+            echo "ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}" > .env
+    
+            echo "--- (신규) Docker: ES 및 Kibana 시작 ---"
+            docker-compose up -d --build
+    
+            echo "--- (신규) Elasticsearch: 'nori' 플러그인 설치 시도 ---"
+            echo "Elasticsearch 컨테이너 시작 대기 (30초)..."
+            sleep 30
+            
+            docker exec es-container /usr/share/elasticsearch/bin/elasticsearch-plugin install analysis-nori || true
+            
+            echo "--- Elasticsearch: 'nori' 적용을 위해 재시작 ---"
+            docker-compose restart elasticsearch
+    
+            echo "--- Docker 설정 완료 ---"
 
             echo "--- 새 .jar 찾기 (plain 제외) ---"
             JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
@@ -105,16 +123,18 @@ jobs:
               kill -9 $PID || true
             fi
 
-            echo "--- 환경변수 주입 ---"
-            # secrets는 워크플로 YAML에서 미리 치환됩니다. (필요 시 작은따옴표로 감싸 안전하게)
-            export DB_URL='${{ secrets.DB_URL }}'
-            export DB_USERNAME='${{ secrets.DB_USERNAME }}'
-            export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
-            echo "환경변수 설정 완료"
-
-            echo "--- 새 서버 시작 ---"
-            # 절대 경로로 java 사용, nohup + disown로 세션에 영향 주지 않음
-            nohup /usr/bin/java -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
+            echo "--- 새 서버 시작 (환경변수와 함께) ---"
+            nohup /usr/bin/java \
+              -Dspring.datasource.url='${{ secrets.DB_URL }}' \
+              -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
+              -Dspring.datasource.password='${{ secrets.DB_PASSWORD }}' \
+              
+              # ▼▼▼ [신규] Elasticsearch ID/PW 주입 ▼▼▼
+              -Dspring.data.elasticsearch.username=elastic \
+              -Dspring.data.elasticsearch.password='${{ secrets.ELASTIC_PASSWORD }}' \
+              
+              -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
+            
             disown
             echo "서버 시작 명령 전송 완료. 로그: $APP_DIR/server.log"
             echo "--- 배포 완료 ---"
