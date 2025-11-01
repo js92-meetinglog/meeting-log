@@ -79,6 +79,7 @@ jobs:
             echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd "$APP_DIR"
+            git pull origin main
             
             # =========================================================
             # ▼ Docker Compose: ES/Kibana 설정
