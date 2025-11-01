@@ -83,14 +83,40 @@ jobs:
             # =========================================================
             # ▼ Docker Compose: ES/Kibana 설정
             # =========================================================
-            
-            echo "--- (신규) Docker: .env 파일 생성 (ES 비밀번호) ---"
+            echo "--- Docker 설치 확인 및 설치 ---"
+            # 'command -v'로 docker가 설치되어 있는지 확인
+            if ! command -v docker &> /dev/null
+            then
+            echo "Docker를 찾을 수 없습니다. 설치를 시작합니다."
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            # (선택) sudo 없이 docker를 실행하기 위한 권한 (권장)
+            # sudo usermod -aG docker $USER 
+            # (새 그룹 적용을 위해 재접속이 필요할 수 있어 GHA 스크립트에선 복잡할 수 있음)
+            else
+            echo "Docker가 이미 설치되어 있습니다."
+            fi
+    
+            echo "--- (신규) Docker Compose 설치 확인 및 설치 ---"
+            # 'command -v'로 docker-compose가 설치되어 있는지 확인
+            if ! command -v docker-compose &> /dev/null
+            then
+            echo "docker-compose를 찾을 수 없습니다. 설치를 시작합니다."
+            sudo apt-get update
+            sudo apt-get install -y docker-compose
+            else
+            echo "docker-compose가 이미 설치되어 있습니다."
+            fi
+          
+            echo "--- Docker: .env 파일 생성 (ES 비밀번호) ---"
             echo "ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}" > .env
     
-            echo "--- (신규) Docker: ES 및 Kibana 시작 ---"
+            echo "--- Docker: ES 및 Kibana 시작 ---"
             docker-compose up -d --build
     
-            echo "--- (신규) Elasticsearch: 'nori' 플러그인 설치 시도 ---"
+            echo "--- Elasticsearch: 'nori' 플러그인 설치 시도 ---"
             echo "Elasticsearch 컨테이너 시작 대기 (30초)..."
             sleep 30
             
