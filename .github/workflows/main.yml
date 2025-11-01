@@ -1,3 +1,4 @@
+
 name: Spring Boot CI/CD to AWS EC2
 
 on:
@@ -43,6 +44,9 @@ jobs:
           name: app-artifact
           path: .
 
+      - name: List files (for debugging)
+        run: ls -R
+
       - name: SCP to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -58,69 +62,47 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_KEY }}
-          timeout: 30m
           script: |
             set -euxo pipefail
+            echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd "$APP_DIR"
-
-            echo "--- Docker 캐시 정리 ---"
-            sudo docker system prune -a -f --volumes || true
-
-            echo "--- 기존 서버 로그 정리 ---"
-            sudo rm -f $APP_DIR/server.log || true
-
-            echo "--- Docker 설치 확인 ---"
+            
+            echo "--- Docker 설치 확인 및 설치 ---"
             if ! command -v docker &> /dev/null; then
               sudo apt-get update
               sudo apt-get install -y docker.io
               sudo systemctl start docker
               sudo systemctl enable docker
             fi
-
-            echo "--- Docker Compose 설치 확인 ---"
+            
+            echo "--- Docker Compose 설치 확인 및 설치 ---"
             if ! command -v docker-compose &> /dev/null; then
               sudo apt-get install -y docker-compose
             fi
-
+            
             echo "ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}" > .env
-
-            echo "--- Docker Compose 빌드 및 시작 ---"
             sudo docker-compose up -d --build
-
-            echo "--- Elasticsearch & Kibana 컨테이너 Running 대기 ---"
-            for i in {1..60}; do
-              STATUS_ES=$(sudo docker inspect -f '{{.State.Running}}' es-container || echo "false")
-              STATUS_KB=$(sudo docker inspect -f '{{.State.Running}}' kibana-container || echo "false")
-              if [ "$STATUS_ES" == "true" ] && [ "$STATUS_KB" == "true" ]; then
-                echo "컨테이너 실행 확인"
-                break
-              fi
-              echo "Waiting for containers..."
-              sleep 5
-            done
-
-            echo "--- Elasticsearch nori 플러그인 설치 ---"
+            
+            echo "Elasticsearch 컨테이너 시작 대기..."
+            sleep 30
             sudo docker exec es-container /usr/share/elasticsearch/bin/elasticsearch-plugin install analysis-nori || true
             sudo docker-compose restart elasticsearch
-
-            echo "--- Spring Boot .jar 확인 및 배포 ---"
+            
             JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
             if [ -z "$JAR_FILE" ]; then
               echo "오류: 실행 가능한 .jar 파일을 찾을 수 없습니다."
               exit 1
             fi
-
+            
             JAR_NAME=$(basename "$JAR_FILE")
             PID=$(pgrep -f "$JAR_NAME" || true)
             if [ -n "$PID" ]; then
-              echo "기존 프로세스 종료..."
               kill -15 $PID || true
               sleep 10
               kill -9 $PID || true
             fi
-
-            echo "--- 새 서버 시작 ---"
+            
             nohup /usr/bin/java \
               -Dspring.datasource.url='${{ secrets.DB_URL }}' \
               -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
@@ -128,6 +110,12 @@ jobs:
               -Dspring.data.elasticsearch.username=elastic \
               -Dspring.data.elasticsearch.password='${{ secrets.ELASTIC_PASSWORD }}' \
               -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
-
             disown
+            
             echo "--- 배포 완료 ---"
+            
+            echo "--- Docker 캐시 정리 ---"
+            sudo docker system prune -a -f --volumes || true
+            
+            echo "--- Docker Compose 빌드 ---"
+            sudo docker-compose up -d --build
