@@ -7,13 +7,14 @@ services:
     environment:
       - "discovery.type=single-node"
       - "xpack.security.enabled=true"
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - "ELASTIC_PASSWORD=${ELASTIC_PASSWORD}"
     ports:
       - "9200:9200"
       - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.1
@@ -24,6 +25,7 @@ services:
       - "ELASTICSEARCH_HOSTS=https://elasticsearch:9200"
       - "ELASTICSEARCH_USERNAME=elastic"
       - "ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}"
+      - "NODE_OPTIONS=--max-old-space-size=512"
     depends_on:
       - elasticsearch
 
