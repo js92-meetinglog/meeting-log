@@ -58,6 +58,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_KEY }}
+          timeout: 1800  # 30분으로 늘림
           script: |
             set -euxo pipefail
             APP_DIR="/home/ubuntu/app"
@@ -87,15 +88,16 @@ jobs:
             echo "--- Docker Compose 빌드 및 시작 ---"
             sudo docker-compose up -d --build
 
-            echo "--- Elasticsearch 컨테이너 Running 대기 ---"
-            for i in {1..30}; do
-              STATUS=$(sudo docker inspect -f '{{.State.Running}}' es-container || echo "false")
-              if [ "$STATUS" == "true" ]; then
+            echo "--- Elasticsearch & Kibana 컨테이너 Running 대기 ---"
+            for i in {1..60}; do
+              STATUS_ES=$(sudo docker inspect -f '{{.State.Running}}' es-container || echo "false")
+              STATUS_KB=$(sudo docker inspect -f '{{.State.Running}}' kibana-container || echo "false")
+              if [ "$STATUS_ES" == "true" ] && [ "$STATUS_KB" == "true" ]; then
                 echo "컨테이너 실행 확인"
                 break
               fi
-              echo "Waiting for es-container..."
-              sleep 2
+              echo "Waiting for containers..."
+              sleep 5
             done
 
             echo "--- Elasticsearch nori 플러그인 설치 ---"
