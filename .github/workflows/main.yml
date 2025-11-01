@@ -62,7 +62,9 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_KEY }}
-          source: "build/libs/*.jar"   # (1)에서 다운로드한 .jar 파일
+          source: |
+            build/libs/*.jar
+            docker-compose.yml
           target: "/home/ubuntu/app"    # (2단계)에서 EC2에 만들어둔 디렉터리
 
 
@@ -79,7 +81,6 @@ jobs:
             echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd "$APP_DIR"
-            git pull origin main
             
             # =========================================================
             # ▼ Docker Compose: ES/Kibana 설정
