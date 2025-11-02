@@ -18,10 +18,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
                     .requestMatchers("/**").permitAll() // 모든 경로(/**)를 허용
                     .anyRequest().authenticated()
             );
+
+
 //            .csrf(csrf -> csrf.disable())
 //            .authorizeHttpRequests(auth -> auth
 //                .requestMatchers("/", "/login", "/oauth2/**", "/login/oauth2/code/**").permitAll()
