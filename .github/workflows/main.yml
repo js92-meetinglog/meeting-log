@@ -66,84 +66,65 @@ jobs:
             echo "--- 배포 시작 ---"
             APP_DIR="/home/ubuntu/app"
             cd "$APP_DIR"
-            
-            # ... (Docker 및 Compose 설치 부분) ...
-            echo "--- Docker 설치 확인 및 설치 ---"
+
+            echo "--- Docker 설치 확인 ---"
             if ! command -v docker &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y docker.io
-              sudo systemctl start docker
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io docker-compose-plugin
               sudo systemctl enable docker
-            fi
-            
-            echo "--- Docker Compose 설치 확인 및 설치 ---"
-            if ! command -v docker &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
               sudo systemctl start docker
-              sudo systemctl enable docker
             fi
-            
+
             echo "ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}" > .env
-            
-            # --- Docker 스택 초기화 및 시작 ---
-            echo "--- (신규) 기존 Docker 스택 강제 삭제 (초기화) ---"
-            # 'down'을 먼저 실행하여 깨진 상태를 정리합니다.
+
+            echo "--- 기존 Docker 스택 종료 ---"
             sudo docker compose down -v --remove-orphans || true 
-            
-            echo "--- (신규) Docker 이미지 PULL (타임아웃 방지) ---"
-            sudo docker compose pull
-            
-            echo "--- Docker Compose 빌드 및 시작 ---"
+
+            echo "--- 이미지 pull 및 재시작 ---"
+            sudo docker compose pull || true
             sudo docker compose up -d --build
-            
-            echo "Elasticsearch 컨테이너 시작 대기 (초기 30초)..."
-            sleep 30
-            
-            # --- Nori 플러그인 설치 및 재시작 ---
-            sudo docker exec es-container /usr/share/elasticsearch/bin/elasticsearch-plugin install analysis-nori || true
-            sudo docker compose restart elasticsearch
-            
-            echo "--- ES가 응답할 때까지 대기 (최대 2분) ---"
+
+            echo "--- Elasticsearch 컨테이너 대기 (최대 2분) ---"
             counter=0
-            # -k (인증서 무시), -u (인증)
-            until sudo curl -k -u "elastic:${{ secrets.ELASTIC_PASSWORD }}" "https://localhost:9200" &> /dev/null
-            do
-              echo "ES가 아직 준비되지 않았습니다. 10초 후 재시도..."
-              sleep 10
+            until sudo docker ps | grep -q "es-container"; do
+              echo "ES 컨테이너 대기 중..."
+              sleep 5
               counter=$((counter+1))
-              if [ $counter -ge 12 ]; then
-                echo "ES 시작 시간 초과!"
+              if [ $counter -ge 24 ]; then
+                echo "ES 컨테이너 시작 시간 초과!"
                 exit 1
               fi
             done
-            echo "ES가 성공적으로 응답했습니다."
-            
-            # --- Spring Boot 배포 ---
-            JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
+
+            echo "--- Nori 플러그인 설치 ---"
+            sudo docker exec es-container /usr/share/elasticsearch/bin/elasticsearch-plugin install analysis-nori || true
+            sudo docker compose restart elasticsearch || true
+
+            echo "--- Spring Boot 배포 ---"
+            JAR_FILE=$(find build/libs -type f -name "*.jar" ! -name "*plain*" | head -n 1 || true)
             if [ -z "$JAR_FILE" ]; then
               echo "오류: 실행 가능한 .jar 파일을 찾을 수 없습니다."
               exit 1
             fi
-            
+
             JAR_NAME=$(basename "$JAR_FILE")
             PID=$(pgrep -f "$JAR_NAME" || true)
             if [ -n "$PID" ]; then
+              echo "기존 프로세스 종료 중..."
               kill -15 $PID || true
               sleep 10
               kill -9 $PID || true
             fi
-            
+
+            echo "새 프로세스 시작: $JAR_NAME"
             nohup /usr/bin/java \
               -Dspring.datasource.url='${{ secrets.DB_URL }}' \
               -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
               -Dspring.datasource.password='${{ secrets.DB_PASSWORD }}' \
               -Dspring.data.elasticsearch.username=elastic \
               -Dspring.data.elasticsearch.password='${{ secrets.ELASTIC_PASSWORD }}' \
-              \
               -Dspring.elasticsearch.rest.ssl.verification.mode=none \
-              \
-              -jar "$JAR_FkILE" > $APP_DIR/server.log 2>&1 &
+              -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
+
             disown
-            
             echo "--- 배포 완료 ---"
