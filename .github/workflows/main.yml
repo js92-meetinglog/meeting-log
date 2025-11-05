@@ -84,6 +84,9 @@ jobs:
             ENCRYPTION_KEY_SECURITY=${{ secrets.ENCRYPTION_KEY_SECURITY }}
             ENCRYPTION_KEY_REPORTING=${{ secrets.ENCRYPTION_KEY_REPORTING }}
             EOF
+            
+            echo "--- 중복된 컨테이너 정리 ---"
+            sudo docker rm -f es-container kb-container || true
 
             echo "--- Docker Compose 재시작 ---"
             sudo docker compose down -v --remove-orphans || true
@@ -104,7 +107,7 @@ jobs:
             
             echo "--- Kibana 컨테이너 대기 ---"
             counter=0
-            until sudo docker ps | grep -q "kibana-container"; do
+            until sudo docker ps | grep -q "kb-container"; do
               echo "Kibana 컨테이너 대기 중..."
               sleep 5
               counter=$((counter+1))
