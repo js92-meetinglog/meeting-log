@@ -74,13 +74,19 @@ jobs:
               sudo systemctl enable docker
               sudo systemctl start docker
             fi
+            
+            echo "--- .env 파일 생성 ---"
+            cat > .env <<EOF
+            ELASTIC_VERSION=8.11.1
+            ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
+            ELASTIC_SERVICE_TOKEN=${{ secrets.ELASTIC_SERVICE_TOKEN }}
+            ENCRYPTION_KEY_SAVED=${{ secrets.ENCRYPTION_KEY_SAVED }}
+            ENCRYPTION_KEY_SECURITY=${{ secrets.ENCRYPTION_KEY_SECURITY }}
+            ENCRYPTION_KEY_REPORTING=${{ secrets.ENCRYPTION_KEY_REPORTING }}
+            EOF
 
-            echo "ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}" > .env
-
-            echo "--- 기존 Docker 스택 종료 ---"
-            sudo docker compose down -v --remove-orphans || true 
-
-            echo "--- 이미지 pull 및 재시작 ---"
+            echo "--- Docker Compose 재시작 ---"
+            sudo docker compose down -v --remove-orphans || true
             sudo docker compose pull || true
             sudo docker compose up -d --build
 
@@ -92,6 +98,18 @@ jobs:
               counter=$((counter+1))
               if [ $counter -ge 24 ]; then
                 echo "ES 컨테이너 시작 시간 초과!"
+                exit 1
+              fi
+            done
+            
+            echo "--- Kibana 컨테이너 대기 ---"
+            counter=0
+            until sudo docker ps | grep -q "kibana-container"; do
+              echo "Kibana 컨테이너 대기 중..."
+              sleep 5
+              counter=$((counter+1))
+              if [ $counter -ge 24 ]; then
+                echo "Kibana 컨테이너 시작 시간 초과!"
                 exit 1
               fi
             done
