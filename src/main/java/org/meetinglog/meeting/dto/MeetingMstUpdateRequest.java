@@ -7,19 +7,9 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class MeetingMstRequest {
+public class MeetingMstUpdateRequest {
     private String meetingName;       // 회의명
     private String meetingState;      // 회의 상태 (예: 진행중, 종료 등)
     private LocalDateTime meetingDate; // 회의 일시
     private Integer meetingDuration;   // 회의 소요시간 (분)
-    private MeetingDtlRequest detail;  // 상세정보 (옵션)
-
-    // 회의 상세 요청 DTO
-    @Getter
-    @Setter
-    public static class MeetingDtlRequest {
-        private Long fileId;           // FILE_ID (nullable)
-        private String meetingSummary; // 회의 요약
-        private String meetingStt;     // STT 텍스트
-    }
 }
