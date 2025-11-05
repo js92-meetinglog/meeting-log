@@ -5,17 +5,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.meetinglog.meeting.dto.MeetingMstRequest;
 import org.meetinglog.meeting.dto.MeetingSummaryRequest;
 import org.meetinglog.meeting.service.MeetingService;
+import org.meetinglog.meeting.service.MeetingService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/meeting")
+@RequestMapping("/v1/meeting")
 public class MeetingController {
 
     private final MeetingService meetingService;
+
+    @Autowired
+    private MeetingService meetingService;
 
     @GetMapping("/test")
     public ResponseEntity<String> testApi() {
@@ -85,5 +94,11 @@ public class MeetingController {
 
         return ResponseEntity.ok("회의 텍스트가 요약되어 저장되었습니다.");
     }*/
+
+    @PostMapping("/test")
+    public ResponseEntity<String> testSaveApi() {
+
+        return meetingService.testSave();
+    }
 
 }

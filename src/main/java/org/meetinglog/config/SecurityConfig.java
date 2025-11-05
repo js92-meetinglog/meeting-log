@@ -25,6 +25,8 @@ public class SecurityConfig {
             );
 
 
+            )
+                .csrf(AbstractHttpConfigurer::disable);
 //            .csrf(csrf -> csrf.disable())
 //            .authorizeHttpRequests(auth -> auth
 //                .requestMatchers("/", "/login", "/oauth2/**", "/login/oauth2/code/**").permitAll()

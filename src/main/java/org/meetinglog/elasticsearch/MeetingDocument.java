@@ -23,9 +23,9 @@ public class MeetingDocument {
     @Schema(description = "ELS 고유 ID")
     private String id;
 
-    @Field(type = FieldType.Long)
+    @Field(type = FieldType.Text)
     @Schema(description = "회의록 아이디")
-    private Long meetingId;
+    private String meetingId;
 
     @Field(type = FieldType.Text, analyzer = "nori")
     @Schema(description = "회의록 타이틀")

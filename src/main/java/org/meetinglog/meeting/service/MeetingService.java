@@ -40,7 +40,10 @@ public class MeetingService {
             if (req.getDetail().getFileId() != null) {
                 file = fileMstRepository.findById(req.getDetail().getFileId()).orElse(null);
             }
+import org.springframework.http.ResponseEntity;
 
+public interface MeetingService {
+    public ResponseEntity<String> testSave();
             MeetingDtl dtl = MeetingDtl.builder()
                     .meeting(mst)                    // @MapsId 로 MEETING_ID 공유
                     .file(file)
