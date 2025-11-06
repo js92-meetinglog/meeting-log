@@ -1,5 +1,6 @@
 package org.meetinglog.config;
 
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
@@ -13,12 +14,6 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
   @Value("${spring.elasticsearch.uris:http://localhost:9200}")
   private String elasticsearchUri;
 
-  @Value("${spring.elasticsearch.username:elastic}")
-  private String username;
-
-  @Value("${spring.elasticsearch.password:}")
-  private String password;
-
   @Override
   public ClientConfiguration clientConfiguration() {
     String host = elasticsearchUri
@@ -27,7 +22,8 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     return ClientConfiguration.builder()
       .connectedTo(host)
-      .withBasicAuth(username, password)
+      .withConnectTimeout(Duration.ofSeconds(10))
+      .withSocketTimeout(Duration.ofSeconds(60))
       .build();
   }
 }
