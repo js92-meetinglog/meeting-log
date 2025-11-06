@@ -143,8 +143,8 @@ jobs:
             -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
             -Dspring.datasource.password='${{ secrets.DB_PASSWORD }}' \
             -Dspring.elasticsearch.uris=http://localhost:9200 \
-            -Dspring.data.elasticsearch.username=kibana_system \
-            -Dspring.data.elasticsearch.password='${{ secrets.KIBANA_PASSWORD }}' \
+            -Dspring.elasticsearch.username=kibana_system \
+            -Dspring.elasticsearch.password='${{ secrets.KIBANA_PASSWORD }}' \
             -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
 
             disown
