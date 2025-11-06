@@ -79,7 +79,7 @@ jobs:
             cat > .env <<EOF
             ELASTIC_VERSION=8.11.1
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
-            ELASTIC_SERVICE_TOKEN=${{ secrets.ELASTIC_SERVICE_TOKEN }}
+            KIBANA_PASSWORD=${{ secrets.KIBANA_PASSWORD }}
             ENCRYPTION_KEY_SAVED=${{ secrets.ENCRYPTION_KEY_SAVED }}
             ENCRYPTION_KEY_SECURITY=${{ secrets.ENCRYPTION_KEY_SECURITY }}
             ENCRYPTION_KEY_REPORTING=${{ secrets.ENCRYPTION_KEY_REPORTING }}
