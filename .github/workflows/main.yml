@@ -139,13 +139,13 @@ jobs:
 
             echo "새 프로세스 시작: $JAR_NAME"
             nohup /usr/bin/java \
-              -Dspring.datasource.url='${{ secrets.DB_URL }}' \
-              -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
-              -Dspring.datasource.password='${{ secrets.DB_PASSWORD }}' \
-              -Dspring.data.elasticsearch.username=kibana_system  \
-              -Dspring.data.elasticsearch.password='${{ secrets.ELASTIC_SERVICE_TOKEN }}' \
-              -Dspring.elasticsearch.rest.ssl.verification.mode=none \
-              -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
+            -Dspring.datasource.url='${{ secrets.DB_URL }}' \
+            -Dspring.datasource.username='${{ secrets.DB_USERNAME }}' \
+            -Dspring.datasource.password='${{ secrets.DB_PASSWORD }}' \
+            -Dspring.data.elasticsearch.username=kibana_system \
+            -Dspring.data.elasticsearch.password='${{ secrets.KIBANA_PASSWORD }}' 
+            -Dspring.elasticsearch.rest.ssl.verification.mode=none \
+            -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
 
             disown
             echo "--- 배포 완료 ---"
