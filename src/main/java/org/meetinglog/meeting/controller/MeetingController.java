@@ -3,10 +3,8 @@ package org.meetinglog.meeting.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.meetinglog.meeting.dto.MeetingMstRequest;
-import org.meetinglog.meeting.dto.MeetingSummaryRequest;
+import org.meetinglog.meeting.service.AiService;
 import org.meetinglog.meeting.service.MeetingService;
-import org.meetinglog.meeting.service.MeetingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -22,9 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeetingController {
 
     private final MeetingService meetingService;
-
-    @Autowired
-    private MeetingService meetingService;
+    private final AiService aiService;
 
     @GetMapping("/test")
     public ResponseEntity<String> testApi() {
@@ -71,34 +70,17 @@ public class MeetingController {
         }
     }
 
-    // 회의 녹음 파일 처리
-    /*@PostMapping("/{meetingId}/recording")
-    public ResponseEntity<String> processMeetingRecording(@PathVariable Long meetingId, @RequestParam("file") MultipartFile file) {
-        // AI 시스템에 파일을 보내고 텍스트 변환 요청
-        String aiText = aiService.processRecording(file);
-
-        // 변환된 텍스트를 DB에 저장
-        meetingService.saveMeetingText(meetingId, aiText);
-
-        return ResponseEntity.ok("회의 녹음이 텍스트로 변환되어 저장되었습니다.");
+    // 음성 파일 처리
+    @PostMapping("/{meetingId}/recording")
+    public Mono<ResponseEntity<String>> processAudio(@PathVariable Long meetingId, @RequestParam("file") MultipartFile file) {
+        return meetingService.processRecordingAndStore(meetingId, file);
     }
 
-    // 회의 텍스트 요약
+    // 텍스트 요약 처리
     @PostMapping("/{meetingId}/summary")
-    public ResponseEntity<String> summarizeMeetingText(@PathVariable Long meetingId, @RequestBody MeetingSummaryRequest request) {
-        // AI 시스템에 텍스트 요약 요청
-        String summarizedText = aiService.summarizeText(request.getText());
-
-        // 요약된 텍스트를 DB에 저장
-        meetingService.saveMeetingSummary(meetingId, summarizedText);
-
-        return ResponseEntity.ok("회의 텍스트가 요약되어 저장되었습니다.");
-    }*/
-
-    @PostMapping("/test")
-    public ResponseEntity<String> testSaveApi() {
-
-        return meetingService.testSave();
+    public Mono<ResponseEntity<String>> summarizeText(@PathVariable Long meetingId, @RequestBody String text) {
+        return meetingService.summarizeTextAndStore(meetingId, text);
     }
+
 
 }
