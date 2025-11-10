@@ -1,6 +1,10 @@
 package org.meetinglog.meeting.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.meetinglog.common.dto.ApiResponse;
+import org.meetinglog.common.enums.ErrorMessage;
+import org.meetinglog.common.enums.SuccessMessage;
+import org.meetinglog.common.exception.SearchException;
 import org.meetinglog.meeting.dto.MeetingSearchResponse;
 import org.meetinglog.meeting.service.MeetingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,22 +37,34 @@ public class MeetingController {
 
         return meetingService.testSave();
     }
-    
+
     @GetMapping("/search")
-    public ResponseEntity<MeetingSearchResponse> searchMeetings(
+    public ApiResponse<MeetingSearchResponse> searchMeetings(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) List<String> participants,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         try {
+            if (page < 0) {
+                throw new SearchException(ErrorMessage.INVALID_PAGE_NUMBER.getMessage());
+            }
+            if (size <= 0 || size > 100) {
+                throw new SearchException(ErrorMessage.INVALID_PAGE_SIZE.getMessage());
+            }
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                throw new SearchException(ErrorMessage.INVALID_DATE_RANGE.getMessage());
+            }
+
             MeetingSearchResponse response = meetingService.searchMeetings(keyword, participants, startDate, endDate, page, size);
-            return ResponseEntity.ok(response);
+            return ApiResponse.success(response, SuccessMessage.SEARCH_COMPLETED.getMessage());
+        } catch (SearchException e) {
+            throw e;
         } catch (Exception e) {
             log.error("회의록 검색 중 오류 발생: ", e);
-            return ResponseEntity.internalServerError().build();
+            throw new SearchException(ErrorMessage.SEARCH_ERROR.getMessage(), e);
         }
     }
 
