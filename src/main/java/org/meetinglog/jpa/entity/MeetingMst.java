@@ -1,4 +1,4 @@
-package org.meetinglog.meeting.entity;
+package org.meetinglog.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,7 +6,7 @@ import org.meetinglog.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 @Entity
-@Table(name = "`MEETING_MST`")// ✅ 대문자 테이블 이름 강제 인식
+@Table(name = "MEETING_MST")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MeetingMst extends BaseEntity {
 

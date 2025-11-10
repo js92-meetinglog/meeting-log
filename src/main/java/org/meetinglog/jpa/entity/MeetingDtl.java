@@ -1,11 +1,11 @@
-package org.meetinglog.meeting.entity;
+package org.meetinglog.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.meetinglog.entity.BaseEntity;
-import org.meetinglog.file.entity.FileMst;
+
 @Entity
-@Table(name = "`MEETING_DTL`")
+@Table(name = "MEETING_DTL")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MeetingDtl extends BaseEntity {
 

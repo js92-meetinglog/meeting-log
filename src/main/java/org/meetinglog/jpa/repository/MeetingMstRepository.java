@@ -1,6 +1,6 @@
-package org.meetinglog.meeting.repository;
+package org.meetinglog.jpa.repository;
 
-import org.meetinglog.meeting.entity.MeetingMst;
+import org.meetinglog.jpa.entity.MeetingMst;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MeetingMstRepository extends JpaRepository<MeetingMst,Long> {
