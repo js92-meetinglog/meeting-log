@@ -9,7 +9,6 @@ import org.meetinglog.common.enums.SuccessMessage;
 import org.meetinglog.common.exception.SearchException;
 import org.meetinglog.meeting.dto.MeetingSearchResponse;
 import org.meetinglog.meeting.service.MeetingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,12 +32,6 @@ public class MeetingController {
     @GetMapping("/test")
     public ResponseEntity<String> testApi() {
         return ResponseEntity.ok().body("test !! ");
-    }
-
-    @PostMapping("/test")
-    public ResponseEntity<String> testSaveApi() {
-
-        return meetingService.testSave();
     }
 
     @PostMapping
