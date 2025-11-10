@@ -3,7 +3,6 @@ package org.meetinglog.meeting.service;
 import lombok.RequiredArgsConstructor;
 import org.meetinglog.file.entity.FileMst;
 import org.meetinglog.file.repository.FileMstRepository;
-import org.meetinglog.meeting.dto.MeetingDtlRequest;
 import org.meetinglog.meeting.dto.MeetingMstRequest;
 import org.meetinglog.meeting.entity.MeetingDtl;
 import org.meetinglog.meeting.entity.MeetingMst;
@@ -11,8 +10,6 @@ import org.meetinglog.meeting.repository.MeetingDtlRepository;
 import org.meetinglog.meeting.repository.MeetingMstRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
