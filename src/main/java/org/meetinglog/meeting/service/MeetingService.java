@@ -37,6 +37,8 @@ public class MeetingService {
                 file = fileMstRepository.findById(req.getDetail().getFileId()).orElse(null);
             }
 
+
+
             MeetingDtl dtl = MeetingDtl.builder()
                     .meeting(mst)                    // @MapsId 로 MEETING_ID 공유
                     .file(file)
@@ -50,5 +52,8 @@ public class MeetingService {
 
         return mst.getMeetingId();
     }
+    public MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
+                                              LocalDate startDate, LocalDate endDate,
+                                              int page, int size);
 }
 

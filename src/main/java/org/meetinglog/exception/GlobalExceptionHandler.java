@@ -1,6 +1,9 @@
 package org.meetinglog.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.meetinglog.common.dto.ApiResponse;
+import org.meetinglog.common.exception.BusinessException;
+import org.meetinglog.common.exception.SearchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +25,20 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException e) {
+        log.error("Business Exception: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(4000, e.getMessage()));
+    }
+
+    @ExceptionHandler(SearchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleSearchException(SearchException e) {
+        log.error("Search Exception: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(4000, e.getMessage()));
+    }
 
     @ExceptionHandler(OAuth2AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleOAuth2AuthenticationException(
