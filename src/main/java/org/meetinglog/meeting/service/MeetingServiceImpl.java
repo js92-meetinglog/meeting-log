@@ -1,5 +1,6 @@
 package org.meetinglog.meeting.service;
 
+import lombok.AllArgsConstructor;
 import org.meetinglog.elasticsearch.MeetingDocument;
 import org.meetinglog.elasticsearch.MeetingLogRepository;
 import org.meetinglog.jpa.entity.FileMst;
@@ -10,7 +11,6 @@ import org.meetinglog.jpa.entity.MeetingDtl;
 import org.meetinglog.jpa.entity.MeetingMst;
 import org.meetinglog.jpa.repository.MeetingDtlRepository;
 import org.meetinglog.jpa.repository.MeetingMstRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,14 +25,11 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class MeetingServiceImpl implements MeetingService {
-    @Autowired
     private MeetingMstRepository meetingMstRepository;
-    @Autowired
     private MeetingDtlRepository meetingDtlRepository;
-    @Autowired
     private FileMstRepository fileMstRepository;
-    @Autowired
     private MeetingLogRepository meetingLogRepository;
 
     @Transactional
