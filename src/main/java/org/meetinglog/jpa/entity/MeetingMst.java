@@ -2,12 +2,16 @@ package org.meetinglog.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.meetinglog.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 @Entity
 @Table(name = "MEETING_MST")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @Setter
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class MeetingMst extends BaseEntity {
 
     @Id

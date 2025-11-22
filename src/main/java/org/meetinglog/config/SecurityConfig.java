@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -45,4 +47,10 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    // ⭐️ BCryptPasswordEncoder 객체를 생성하여 Spring 컨테이너에 등록합니다.
+    return new BCryptPasswordEncoder();
+  }
 }

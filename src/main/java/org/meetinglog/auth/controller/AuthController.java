@@ -2,13 +2,17 @@ package org.meetinglog.auth.controller;
 
 import static org.meetinglog.common.enums.ErrorMessage.AUTHENTICATION_FAILED;
 
-import java.util.Optional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.meetinglog.auth.dto.AuthRequestDTO;
 import org.meetinglog.auth.dto.AuthRequestDTO.LoginRequest;
 import org.meetinglog.auth.dto.AuthResponseDTO.TokenResponse;
 import org.meetinglog.auth.service.AuthService;
 import org.meetinglog.common.dto.ApiResponse;
+import org.meetinglog.common.enums.ErrorMessage;
+import org.meetinglog.common.exception.BusinessException;
+import org.meetinglog.jpa.entity.UserMst;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -19,14 +23,14 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
   private final AuthService authService;
 
-  @PostMapping("/login/normal")
-  public ApiResponse<TokenResponse> loginNormal(@RequestBody LoginRequest loginRequest) {
+  @PostMapping("/login")
+  public ApiResponse<TokenResponse> login(@RequestBody LoginRequest loginRequest) {
 
     try {
       TokenResponse response = authService.authenticateNormalUser(loginRequest);
@@ -34,6 +38,18 @@ public class AuthController {
       return ApiResponse.success(response);
     } catch (IllegalArgumentException e) {
 
+      return ApiResponse.error(401, e.getMessage());
+    }
+  }
+
+  @PostMapping("/signup")
+  public ApiResponse<UserMst> signup(@RequestBody @Valid AuthRequestDTO.SignupRequest signupRequest) {
+
+    try {
+      UserMst newUser = authService.signupNormalUser(signupRequest);
+      return ApiResponse.success(newUser);
+
+    } catch (IllegalArgumentException e) {
       return ApiResponse.error(401, e.getMessage());
     }
   }

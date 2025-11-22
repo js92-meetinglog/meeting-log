@@ -18,7 +18,9 @@ public enum ErrorMessage {
     ,TYPE_MISMATCH("잘못된 파라미터 타입입니다.")
     ,DATA_INTEGRITY_VIOLATION("데이터 무결성 위반입니다.")
     ,UNEXPECTED_ERROR("예상치 못한 오류가 발생했습니다.")
-    , LOGIN_FAILED("아이디 또는 비밀번호가 잘못되었습니다. ");
+    ,LOGIN_FAILED("아이디 또는 비밀번호가 잘못되었습니다. ")
+    ,SIGNUP_FAILED("회원가입에 실패했습니다.")
+    ,DUPLICATE_ID("이미 존재하는 아이디입니다.");
 
     private final String message;
 

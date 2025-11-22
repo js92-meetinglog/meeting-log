@@ -2,10 +2,13 @@ package org.meetinglog.auth.service;
 
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.meetinglog.auth.dto.AuthRequestDTO.LoginRequest;
+import org.meetinglog.auth.dto.AuthRequestDTO.SignupRequest;
 import org.meetinglog.auth.dto.AuthResponseDTO.TokenResponse;
 import org.meetinglog.auth.jwt.JwtTokenProvider;
+import org.meetinglog.common.exception.BusinessException;
 import org.meetinglog.jpa.entity.UserAuthInfo;
 import org.meetinglog.jpa.entity.UserMst;
 import org.meetinglog.jpa.repository.UserAuthInfoRepository;
@@ -16,7 +19,6 @@ import static org.meetinglog.common.enums.ErrorMessage.*;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthServiceImpl implements AuthService{
   private final UserMstRepository userMstRepository;
   private final UserAuthInfoRepository userAuthInfoRepository;
@@ -24,6 +26,7 @@ public class AuthServiceImpl implements AuthService{
   private final JwtTokenProvider jwtTokenProvider;
 
   @Override
+  @Transactional
   public TokenResponse authenticateNormalUser(LoginRequest request) {
 
     UserMst user = userMstRepository.findByUserIdAndUseYn(request.userId(), "Y")
@@ -55,5 +58,34 @@ public class AuthServiceImpl implements AuthService{
         accessTokenExpIn,
         refreshToken
     );
+  }
+
+  @Override
+  @Transactional
+  public UserMst signupNormalUser(SignupRequest request) {
+
+    if (userMstRepository.findByUserId(request.userId()).isPresent()) {
+      throw new BusinessException(DUPLICATE_ID.getMessage());
+    }
+
+    String unqId = UUID.randomUUID().toString();
+    String encodedPassword = passwordEncoder.encode(request.password());
+
+    UserMst userMst = UserMst.builder()
+        .unqId(unqId)
+        .userId(request.userId())
+        .userNm(request.userNm())
+        .telNo(request.telNo())
+        .build();
+
+    UserAuthInfo userAuthInfo = UserAuthInfo.builder()
+        .unqId(unqId)
+        .loginType("NORMAL")
+        .password(encodedPassword)
+        .build();
+
+    userMstRepository.save(userMst);
+    userAuthInfoRepository.save(userAuthInfo);
+    return userMst;
   }
 }

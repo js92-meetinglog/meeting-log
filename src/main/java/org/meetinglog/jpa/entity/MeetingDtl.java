@@ -2,11 +2,15 @@ package org.meetinglog.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.meetinglog.entity.BaseEntity;
 
 @Entity
 @Table(name = "MEETING_DTL")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @Setter
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class MeetingDtl extends BaseEntity {
 
     @Id
