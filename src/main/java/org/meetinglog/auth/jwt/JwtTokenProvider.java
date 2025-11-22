@@ -1,11 +1,17 @@
 package org.meetinglog.auth.jwt;
 
+import static org.meetinglog.common.enums.ErrorMessage.AUTHENTICATION_FAILED;
+import static org.meetinglog.common.enums.ErrorMessage.TOKEN_ERROR;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.security.Key;
 import java.time.LocalDateTime;
 import java.util.Date;
+import org.meetinglog.common.exception.AuthenticationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import io.jsonwebtoken.io.Decoders;
@@ -77,5 +83,32 @@ public class JwtTokenProvider {
   public LocalDateTime getRefreshTokenExpiryDate() {
     long durationSeconds = this.refreshTokenExpirationDays * 24 * 60 * 60;
     return LocalDateTime.now().plusSeconds(durationSeconds);
+  }
+
+  public boolean validateToken(String token) throws AuthenticationException {
+    try {
+      Jwts.parser()
+          .setSigningKey(getSigningKey())
+          .build()
+          .parseClaimsJws(token);
+
+      return true;
+    }  catch (IllegalArgumentException e) {
+      throw new AuthenticationException(TOKEN_ERROR.getMessage());
+    }
+  }
+
+  /**
+   * 토큰에서 사용자 식별자(UNQ_ID)를 추출합니다.
+   * @param token Access Token
+   * @return UNQ_ID
+   */
+  public String getUnqIdFromToken(String token) {
+    Jws<Claims> claimsJws = Jwts.parser()
+        .setSigningKey(getSigningKey())
+        .build()
+        .parseClaimsJws(token);
+
+    return claimsJws.getBody().getSubject();
   }
 }
