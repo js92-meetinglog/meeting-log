@@ -18,6 +18,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartFile;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +34,9 @@ public class MeetingServiceImpl implements MeetingService {
     private MeetingDtlRepository meetingDtlRepository;
     private FileMstRepository fileMstRepository;
     private MeetingLogRepository meetingLogRepository;
+    private final FileStorageService fileStorageService;
+
+
 
     @Transactional
     @Override
@@ -121,5 +127,35 @@ public class MeetingServiceImpl implements MeetingService {
             return meetingLogRepository.findAll(pageable);
         }
     }
+
+    @Transactional
+    @Override
+    public Long createMeetingFromFile(MultipartFile file) {
+
+        // 1) 파일 저장
+        FileMst savedFile = fileStorageService.saveFile(file);
+
+        // 2) 회의 기본 생성
+        MeetingMst mst = MeetingMst.builder()
+                .meetingName("자동생성-" + System.currentTimeMillis())
+                .meetingState("PROCESSING")
+                .meetingDate(LocalDateTime.now())
+                .build();
+
+        mst.setFrstRgstId("system");
+        mst = meetingMstRepository.save(mst);
+
+        // 3) 회의 상세 생성
+        MeetingDtl dtl = MeetingDtl.builder()
+                .meeting(mst)
+                .file(savedFile)
+                .build();
+
+        dtl.setFrstRgstId("system");
+        meetingDtlRepository.save(dtl);
+
+        return mst.getMeetingId();
+    }
+
 
 }
