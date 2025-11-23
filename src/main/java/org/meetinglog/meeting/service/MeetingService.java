@@ -12,6 +12,8 @@ public interface MeetingService {
 
     Long createMeetingFromFile(MultipartFile file);
 
+    Long attachAudioToMeeting(Long meetingId, MultipartFile file);
+
     MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
                                               LocalDate startDate, LocalDate endDate,
                                               int page, int size);

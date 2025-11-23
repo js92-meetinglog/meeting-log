@@ -91,13 +91,16 @@ public class MeetingController {
         return ApiResponse.success(meetingId, "AI 음성 인식 및 요약 작업이 진행 중입니다.");
     }
 
-    @PostMapping("/audio")
-    public ApiResponse<MeetingAudioResponse> uploadAudio(
-            @ModelAttribute MeetingAudioRequest request
-    ){
-        Long meetingId = meetingService.createMeetingFromFile(request.getAudioFile());
+    @PostMapping("/{meetingId}/audio")
+    public ApiResponse<MeetingAudioResponse> uploadAudioToMeeting(
+            @PathVariable Long meetingId,
+            @RequestParam("file") MultipartFile file
+    ) {
 
-        // 비동기 처리 시작
+        // 1) 파일 저장 후 meeting_dtl에 연결
+        Long savedMeetingId = meetingService.attachAudioToMeeting(meetingId, file);
+
+        // 2) AI 비동기 처리
         aiProcessService.processAudioAsync(meetingId);
 
         MeetingAudioResponse response = MeetingAudioResponse.builder()
@@ -107,6 +110,7 @@ public class MeetingController {
 
         return ApiResponse.success(response, "AI 음성 인식 및 요약 작업이 시작되었습니다.");
     }
+
 
     @PostMapping("/mock-ai")
     public ApiResponse<String> mockAiUpdate(
