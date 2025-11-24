@@ -149,6 +149,7 @@ jobs:
             -Dspring.elasticsearch.username=kibana_system \
             -Dspring.elasticsearch.password='${{ secrets.KIBANA_PASSWORD }}' \
             -Djwt.secret='${{ secrets.JWT_SECRET }}' \
+            -Dai.server.url='${{ secrets.AI_SERVER_URL }}' \
             -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
             
             disown
