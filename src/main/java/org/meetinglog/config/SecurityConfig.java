@@ -50,7 +50,7 @@ public class SecurityConfig {
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-    // ⭐️ BCryptPasswordEncoder 객체를 생성하여 Spring 컨테이너에 등록합니다.
+
     return new BCryptPasswordEncoder();
   }
 }
