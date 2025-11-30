@@ -5,4 +5,5 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStorageService {
     FileMst saveFile(MultipartFile file);
+    byte[] loadFileBytes(String path);
 }

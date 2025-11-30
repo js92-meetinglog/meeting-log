@@ -1,54 +1,57 @@
 package org.meetinglog.meeting.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.meetinglog.jpa.entity.FileMst;
 import org.meetinglog.jpa.repository.FileMstRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final FileMstRepository fileMstRepository;
 
-    private final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads";
-
+    private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads";
 
     @Override
     public FileMst saveFile(MultipartFile file) {
-
         try {
-            // 1) uploads 폴더 생성
             File dir = new File(UPLOAD_DIR);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            if (!dir.exists()) dir.mkdirs();
 
-            // 2) 저장 파일명
-            String savedFileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            File saveFile = new File(dir, savedFileName);
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            File savedFile = new File(dir, fileName);
+            file.transferTo(savedFile);
 
-            // 3) 실제 파일 저장
-            file.transferTo(saveFile);
-
-            // 4) FileMst 저장
             FileMst fileMst = FileMst.builder()
-                    .filePath(saveFile.getAbsolutePath()) // 전체 경로
-                    .fileExtension(getExtension(file.getOriginalFilename())) // 확장자
+                    .filePath(savedFile.getAbsolutePath())
+                    .fileExtension(getExt(file.getOriginalFilename()))
                     .build();
 
             return fileMstRepository.save(fileMst);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("파일 저장 실패", e);
         }
     }
 
-    private String getExtension(String originalFilename) {
-        return originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+    @Override
+    public byte[] loadFileBytes(String path) {
+        try {
+            return Files.readAllBytes(Path.of(path));
+        } catch (Exception e) {
+            throw new RuntimeException("파일 로딩 실패: " + path, e);
+        }
+    }
+
+    private String getExt(String fileName) {
+        return fileName.substring(fileName.lastIndexOf(".") + 1);
     }
 }
