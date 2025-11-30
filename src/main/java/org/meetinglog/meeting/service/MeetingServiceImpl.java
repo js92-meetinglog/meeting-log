@@ -6,6 +6,7 @@ import org.meetinglog.elasticsearch.MeetingLogRepository;
 import org.meetinglog.jpa.entity.*;
 import org.meetinglog.jpa.repository.FileMstRepository;
 import org.meetinglog.jpa.repository.MeetingParticipantRepository;
+import org.meetinglog.meeting.dto.MeetingAudioResponse;
 import org.meetinglog.meeting.dto.MeetingMstRequest;
 import org.meetinglog.meeting.dto.MeetingParticipantRequest;
 import org.meetinglog.meeting.dto.MeetingSearchResponse;
@@ -39,46 +40,35 @@ public class MeetingServiceImpl implements MeetingService {
     private final MeetingParticipantRepository meetingParticipantRepository;
 
 
-
     @Transactional
     @Override
     public Long createMeeting(MeetingMstRequest req) {
 
-        // 1) 회의 마스터 저장
         MeetingMst mst = MeetingMst.builder()
                 .meetingName(req.getMeetingName())
                 .meetingState("PROCESSING")
-                .meetingDate(LocalDateTime.now()) // 자동 생성
-                .meetingDuration(req.getMeetingDuration())
+                .meetingDate(LocalDateTime.now())
+                .meetingDuration(0)
                 .build();
-        mst.setFrstRgstId("system");
 
-        mst = meetingMstRepository.save(mst);
+        meetingMstRepository.save(mst);
 
-
-        // 2) 참석자 저장
         if (req.getParticipants() != null) {
-            for (MeetingParticipantRequest p : req.getParticipants()) {
-
-                MeetingParticipantId id =
-                        new MeetingParticipantId(mst.getMeetingId(), p.getUserId());
-
-                MeetingParticipant participant = MeetingParticipant.builder()
-                        .id(id)
+            req.getParticipants().forEach(p -> {
+                MeetingParticipant mp = MeetingParticipant.builder()
+                        .id(new MeetingParticipantId(mst.getMeetingId(), p.getUserId()))
                         .meeting(mst)
                         .userName(p.getUserName())
                         .build();
 
-                participant.setFrstRgstId("system");
-                meetingParticipantRepository.save(participant);
-            }
+                meetingParticipantRepository.save(mp);
+            });
         }
 
-        // 3) 회의 상세 저장(옵션)
         MeetingDtl dtl = MeetingDtl.builder()
                 .meeting(mst)
                 .build();
-        dtl.setFrstRgstId("system");
+
         meetingDtlRepository.save(dtl);
 
         return mst.getMeetingId();
@@ -141,58 +131,43 @@ public class MeetingServiceImpl implements MeetingService {
         }
     }
 
-    @Transactional
-    @Override
-    public Long createMeetingFromFile(MultipartFile file) {
-
-        // 1) 파일 저장
-        FileMst savedFile = fileStorageService.saveFile(file);
-
-        // 2) 회의 기본 생성
-        MeetingMst mst = MeetingMst.builder()
-                .meetingName("자동생성-" + System.currentTimeMillis())
-                .meetingState("PROCESSING")
-                .meetingDate(LocalDateTime.now())
-                .build();
-
-        mst.setFrstRgstId("system");
-        mst = meetingMstRepository.save(mst);
-
-        // 3) 회의 상세 생성
-        MeetingDtl dtl = MeetingDtl.builder()
-                .meeting(mst)
-                .file(savedFile)
-                .build();
-
-        dtl.setFrstRgstId("system");
-        meetingDtlRepository.save(dtl);
-
-        return mst.getMeetingId();
-    }
 
     @Transactional
     @Override
     public Long attachAudioToMeeting(Long meetingId, MultipartFile file) {
 
-        // 1) 회의 조회
-        MeetingMst mst = meetingMstRepository.findById(meetingId)
+        var mst = meetingMstRepository.findById(meetingId)
                 .orElseThrow(() -> new IllegalArgumentException("회의 없음"));
 
-        // 2) 파일 저장
         FileMst savedFile = fileStorageService.saveFile(file);
 
-        // 3) 회의 상세 조회 (없으면 새로 생성)
         MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
-                .orElse(MeetingDtl.builder()
-                        .meeting(mst)
-                        .build());
+                .orElse(MeetingDtl.builder().meeting(mst).build());
 
         dtl.setFile(savedFile);
-        dtl.setFrstRgstId("system");
 
         meetingDtlRepository.save(dtl);
 
         return meetingId;
+    }
+
+    @Override
+    public MeetingAudioResponse getMeeting(Long meetingId) {
+
+        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+                .orElseThrow(() -> new IllegalArgumentException("회의 상세가 없습니다."));
+
+        MeetingMst mst = dtl.getMeeting();
+
+        return MeetingAudioResponse.builder()
+                .meetingId(mst.getMeetingId())
+                .transcript(dtl.getMeetingStt())
+                .summary(dtl.getMeetingSummary())
+                .keyPoints(dtl.getKeyPoints() != null ? List.of(dtl.getKeyPoints().split("\n")) : null)
+                .actionItems(dtl.getActionItems() != null ? List.of(dtl.getActionItems().split("\n")) : null)
+                .language(dtl.getLanguage())
+                .status(mst.getMeetingState())
+                .build();
     }
 
 
