@@ -33,4 +33,16 @@ public class MeetingDtl extends BaseEntity {
     @Lob
     @Column(name = "MEETING_STT")
     private String meetingStt;
+
+    @Lob
+    @Column(name = "KEY_POINTS")
+    private String keyPoints;
+
+    @Lob
+    @Column(name = "ACTION_ITEMS")
+    private String actionItems;
+
+    @Column(name = "LANGUAGE")
+    private String language;
+
 }

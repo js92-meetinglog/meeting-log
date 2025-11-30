@@ -2,12 +2,16 @@ package org.meetinglog.meeting.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.meetinglog.meeting.dto.MeetingMstRequest;
+import org.meetinglog.jpa.entity.MeetingDtl;
+import org.meetinglog.jpa.entity.MeetingMst;
+import org.meetinglog.jpa.repository.MeetingDtlRepository;
+import org.meetinglog.jpa.repository.MeetingMstRepository;
+import org.meetinglog.meeting.dto.*;
 import org.meetinglog.common.dto.ApiResponse;
 import org.meetinglog.common.enums.ErrorMessage;
 import org.meetinglog.common.enums.SuccessMessage;
 import org.meetinglog.common.exception.SearchException;
-import org.meetinglog.meeting.dto.MeetingSearchResponse;
+import org.meetinglog.meeting.service.AiProcessService;
 import org.meetinglog.meeting.service.MeetingService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +33,11 @@ import java.util.List;
 public class MeetingController {
 
     private final MeetingService meetingService;
+    private final AiProcessService aiProcessService;
+    private final MeetingDtlRepository meetingDtlRepository;
+    private final MeetingMstRepository meetingMstRepository;
+
+
 
     @GetMapping("/test")
     public ResponseEntity<String> testApi() {
@@ -69,5 +79,64 @@ public class MeetingController {
             throw new SearchException(ErrorMessage.SEARCH_ERROR.getMessage(), e);
         }
     }
+
+    @PostMapping("/stt")
+    public ApiResponse<Long> uploadAndProcessStt(@RequestParam("file") MultipartFile file) {
+
+        Long meetingId = meetingService.createMeetingFromFile(file);
+
+        // 비동기 AI 처리 시작
+        aiProcessService.processAudioAsync(meetingId);
+
+        return ApiResponse.success(meetingId, "AI 음성 인식 및 요약 작업이 진행 중입니다.");
+    }
+
+    @PostMapping("/{meetingId}/audio")
+    public ApiResponse<MeetingAudioResponse> uploadAudioToMeeting(
+            @PathVariable Long meetingId,
+            @RequestParam("file") MultipartFile file
+    ) {
+
+        // 1) 파일 저장 후 meeting_dtl에 연결
+        Long savedMeetingId = meetingService.attachAudioToMeeting(meetingId, file);
+
+        // 2) AI 비동기 처리
+        aiProcessService.processAudioAsync(meetingId);
+
+        MeetingAudioResponse response = MeetingAudioResponse.builder()
+                .meetingId(meetingId)
+                .status("PROCESSING")
+                .build();
+
+        return ApiResponse.success(response, "AI 음성 인식 및 요약 작업이 시작되었습니다.");
+    }
+
+
+    @PostMapping("/mock-ai")
+    public ApiResponse<String> mockAiUpdate(
+            @RequestParam Long meetingId,
+            @RequestBody AiSttResponse ai
+    ) {
+
+        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+                .orElseThrow(() -> new IllegalArgumentException("회의 없음"));
+
+        dtl.setMeetingStt(ai.getTranscript());
+        dtl.setMeetingSummary(ai.getSummary());
+        dtl.setKeyPoints(String.join("\n", ai.getKey_points()));
+        dtl.setActionItems(String.join("\n", ai.getAction_items()));
+        dtl.setLanguage(ai.getLanguage());
+
+        meetingDtlRepository.save(dtl);
+
+        MeetingMst mst = dtl.getMeeting();
+        mst.setMeetingState("DONE");
+        meetingMstRepository.save(mst);
+
+        return ApiResponse.success("MOCK AI 저장 완료");
+    }
+
+
+
 
 }
