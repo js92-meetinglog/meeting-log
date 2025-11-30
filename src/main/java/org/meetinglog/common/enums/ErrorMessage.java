@@ -21,7 +21,8 @@ public enum ErrorMessage {
     ,LOGIN_FAILED("아이디 또는 비밀번호가 잘못되었습니다. ")
     ,SIGNUP_FAILED("회원가입에 실패했습니다.")
     ,DUPLICATE_ID("이미 존재하는 아이디입니다.")
-    ,TOKEN_ERROR("정상적이지 않은 토큰입니다.");
+    ,TOKEN_ERROR("정상적이지 않은 토큰입니다.")
+    ,DB_PROCEDURES_ERROR("프로시저 오류가 발생했습니다.");
 
     private final String message;
 
