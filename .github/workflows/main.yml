@@ -76,8 +76,6 @@ jobs:
             fi
             
             echo "--- .env 파일 생성 ---"
-            # .env 파일은 Kibana 관련 비밀번호를 포함할 수 있으나, 
-            # ES 보안 설정에 사용되므로 그대로 둡니다.
             cat > .env <<EOF
             ELASTIC_VERSION=8.11.1
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
@@ -88,19 +86,15 @@ jobs:
             EOF
             
             echo "--- 중복된 컨테이너 정리 ---"
-            # kb-container 제거 부분을 삭제했습니다.
             sudo docker rm -f es-container || true
             
             echo "--- Docker Compose 재시작 ---"
             sudo docker-compose down
-            # Kibana 이미지를 pull 하지 않도록 elasticsearch만 명시
             sudo docker compose pull elasticsearch || true
-            # Kibana를 제외하고 elasticsearch만 실행하도록 명시
             sudo docker-compose up -d elasticsearch
             
             echo "--- Elasticsearch 컨테이너 대기 (최대 2분) ---"
             counter=0
-            # es-container가 Running 상태인지 확인
             until sudo docker ps --filter "name=es-container" --filter "status=running" | grep -q "es-container"; do
               echo "ES 컨테이너 대기 중..."
               sleep 5
@@ -113,14 +107,11 @@ jobs:
             done
             
             echo "--- Nori 플러그인 설치 ---"
-            # Nori가 이미 설치되어 있으면 오류가 날 수 있으므로 || true 추가
             sudo docker exec es-container /usr/share/elasticsearch/bin/elasticsearch-plugin install analysis-nori || true
-            # Nori 설치 후 ES 재시작
             sudo docker compose restart elasticsearch
             
             echo "--- Elasticsearch 재시작 대기 (플러그인 적용) ---"
-            # 재시작 후 ES가 다시 준비될 때까지 기다립니다.
-            sleep 15 # 재시작을 위한 대기 시간
+            sleep 15
             counter=0
             until curl -s -k -u "elastic:${{ secrets.ELASTIC_PASSWORD }}" "http://localhost:9200" | grep -q "You Know, for Search"; do
               echo "ES 재시작 대기 중... (Nori 적용)"
@@ -157,6 +148,8 @@ jobs:
             -Dspring.elasticsearch.uris=http://localhost:9200 \
             -Dspring.elasticsearch.username=kibana_system \
             -Dspring.elasticsearch.password='${{ secrets.KIBANA_PASSWORD }}' \
+            -Djwt.secret='${{ secrets.JWT_SECRET }}' \
+            -Dai.server.url='${{ secrets.AI_SERVER_URL }}' \
             -jar "$JAR_FILE" > $APP_DIR/server.log 2>&1 &
             
             disown

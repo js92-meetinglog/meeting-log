@@ -1,5 +1,8 @@
 package org.meetinglog.auth.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureQuery;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,6 +27,7 @@ public class AuthServiceImpl implements AuthService{
   private final UserAuthInfoRepository userAuthInfoRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
+  private final EntityManager entityManager;
 
   @Override
   @Transactional
@@ -68,7 +72,7 @@ public class AuthServiceImpl implements AuthService{
       throw new BusinessException(DUPLICATE_ID.getMessage());
     }
 
-    String unqId = UUID.randomUUID().toString();
+    String unqId = generateNewUnqIdWithProcedure();
     String encodedPassword = passwordEncoder.encode(request.password());
 
     UserMst userMst = UserMst.builder()
@@ -87,5 +91,18 @@ public class AuthServiceImpl implements AuthService{
     userMstRepository.save(userMst);
     userAuthInfoRepository.save(userAuthInfo);
     return userMst;
+  }
+
+  private String generateNewUnqIdWithProcedure() {
+    StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_GET_NEXT_UNQ_ID");
+    query.registerStoredProcedureParameter("p_next_unq_id", String.class, ParameterMode.OUT);
+    query.execute();
+    String newUnqId = (String) query.getOutputParameterValue("p_next_unq_id");
+
+    if (newUnqId == null || newUnqId.isEmpty()) {
+      throw new BusinessException(DB_PROCEDURES_ERROR.getMessage());
+    }
+
+    return newUnqId;
   }
 }
