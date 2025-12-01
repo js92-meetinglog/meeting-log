@@ -21,15 +21,15 @@ public class NotionServiceImpl implements NotionService {
     @Value("${notion.secret}")
     private String notionSecret;
 
-    @Value("${notion.parent-page-id}")
-    private String parentPageId;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    @Override
-    public void createMeetingPage(MeetingMst mst, MeetingDtl dtl, List<String> participants) {
+    public void createMeetingPage(String parentPageId,
+                                  MeetingMst mst,
+                                  MeetingDtl dtl,
+                                  List<String> participants) {
 
         try {
             Map<String, Object> requestBody = new HashMap<>();
