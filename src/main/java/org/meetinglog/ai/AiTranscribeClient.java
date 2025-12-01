@@ -17,7 +17,7 @@ import org.springframework.web.client.RestTemplate;
 public class AiTranscribeClient {
 
     @Value("${ai.server.url}")
-    private String aiServerUrl;  // http://134.185.112.112:9292/api/v1/transcribe-and-summarize
+    private String aiServerUrl;
 
     private final RestTemplate restTemplate;
 
