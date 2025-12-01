@@ -40,9 +40,9 @@ public class AiTranscribeClient {
 
         try {
             log.info("AI 서버 호출 시작 → {}", aiServerUrl);
-
+            String aiUrl = aiServerUrl + "/api/v1/transcribe-and-summarize";
             ResponseEntity<TranscribeAndSummarizeResponse> response =
-                    restTemplate.postForEntity(aiServerUrl, entity, TranscribeAndSummarizeResponse.class);
+                    restTemplate.postForEntity(aiUrl, entity, TranscribeAndSummarizeResponse.class);
 
             log.info("AI 서버 응답: {}", response.getStatusCode());
 
