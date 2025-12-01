@@ -6,5 +6,5 @@ import org.meetinglog.jpa.entity.MeetingMst;
 import java.util.List;
 
 public interface NotionService {
-    void createMeetingPage(MeetingMst mst, MeetingDtl dtl, List<String> participants);
+    void createMeetingPage(String parentPageId, MeetingMst mst, MeetingDtl dtl, List<String> participants);
 }
