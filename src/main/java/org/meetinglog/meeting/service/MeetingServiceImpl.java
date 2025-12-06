@@ -2,7 +2,7 @@ package org.meetinglog.meeting.service;
 
 import lombok.AllArgsConstructor;
 import org.meetinglog.elasticsearch.MeetingDocument;
-import org.meetinglog.elasticsearch.MeetingLogRepository;
+import org.meetinglog.elasticsearch.MeetingDocumentRepository;
 import org.meetinglog.jpa.entity.*;
 import org.meetinglog.jpa.repository.FileMstRepository;
 import org.meetinglog.jpa.repository.MeetingParticipantRepository;
@@ -30,7 +30,7 @@ public class MeetingServiceImpl implements MeetingService {
     private MeetingMstRepository meetingMstRepository;
     private MeetingDtlRepository meetingDtlRepository;
     private FileMstRepository fileMstRepository;
-    private MeetingLogRepository meetingLogRepository;
+    private MeetingDocumentRepository meetingDocumentRepository;
     private final FileStorageService fileStorageService;
     private final MeetingParticipantRepository meetingParticipantRepository;
 
@@ -108,21 +108,21 @@ public class MeetingServiceImpl implements MeetingService {
         boolean hasDateRange = startDate != null && endDate != null;
 
         if (hasKeyword && hasParticipants && hasDateRange) {
-            return meetingLogRepository.findByKeywordAndParticipantsAndDateRange(keyword, participants, startDate, endDate, pageable);
+            return meetingDocumentRepository.findByKeywordAndParticipantsAndDateRange(keyword, participants, startDate, endDate, pageable);
         } else if (hasKeyword && hasParticipants) {
-            return meetingLogRepository.findByKeywordAndParticipants(keyword, participants, pageable);
+            return meetingDocumentRepository.findByKeywordAndParticipants(keyword, participants, pageable);
         } else if (hasKeyword && hasDateRange) {
-            return meetingLogRepository.findByKeywordAndDateRange(keyword, startDate, endDate, pageable);
+            return meetingDocumentRepository.findByKeywordAndDateRange(keyword, startDate, endDate, pageable);
         } else if (hasParticipants && hasDateRange) {
-            return meetingLogRepository.findByParticipantsAndDateRange(participants, startDate, endDate, pageable);
+            return meetingDocumentRepository.findByParticipantsAndDateRange(participants, startDate, endDate, pageable);
         } else if (hasKeyword) {
-            return meetingLogRepository.findByKeyword(keyword, pageable);
+            return meetingDocumentRepository.findByKeyword(keyword, pageable);
         } else if (hasParticipants) {
-            return meetingLogRepository.findByParticipants(participants, pageable);
+            return meetingDocumentRepository.findByParticipants(participants, pageable);
         } else if (hasDateRange) {
-            return meetingLogRepository.findByDateRange(startDate, endDate, pageable);
+            return meetingDocumentRepository.findByDateRange(startDate, endDate, pageable);
         } else {
-            return meetingLogRepository.findAll(pageable);
+            return meetingDocumentRepository.findAll(pageable);
         }
     }
 

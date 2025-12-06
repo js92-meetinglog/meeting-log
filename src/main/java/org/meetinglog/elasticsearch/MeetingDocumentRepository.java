@@ -9,7 +9,7 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface MeetingLogRepository extends ElasticsearchRepository<MeetingDocument, String> {
+public interface MeetingDocumentRepository extends ElasticsearchRepository<MeetingDocument, String> {
 
     List<MeetingDocument> findByTitleContainingOrTranscriptionContaining(String title, String transcription);
 

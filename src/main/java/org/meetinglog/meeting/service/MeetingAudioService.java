@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.meetinglog.ai.AiTranscribeClient;
 import org.meetinglog.ai.dto.TranscribeAndSummarizeResponse;
+import org.meetinglog.elasticsearch.MeetingDocument;
+import org.meetinglog.elasticsearch.MeetingDocumentRepository;
 import org.meetinglog.jpa.entity.FileMst;
 import org.meetinglog.jpa.entity.MeetingDtl;
 import org.meetinglog.jpa.entity.MeetingMst;
@@ -20,6 +22,7 @@ public class MeetingAudioService {
     private final MeetingDtlRepository meetingDtlRepository;
     private final MeetingMstRepository meetingMstRepository;
     private final FileMstRepository fileMstRepository;
+    private final MeetingDocumentRepository meetingDocumentRepository;
 
     private final FileStorageService fileStorageService;
     private final AiTranscribeClient aiClient;
@@ -48,6 +51,17 @@ public class MeetingAudioService {
         MeetingMst mst = dtl.getMeeting();
         mst.setMeetingState("DONE");
         meetingMstRepository.save(mst);
+
+        MeetingDocument document = MeetingDocument.builder()
+            .meetingId(String.valueOf(meetingId))
+            .title(mst.getMeetingName())
+            .meetingDate(mst.getMeetingDate())
+            // .participants(...)
+            .summary(dtl.getMeetingSummary())
+            .transcription(dtl.getMeetingStt())
+            .build();
+
+        meetingDocumentRepository.save(document);
 
         log.info("AI 처리가 완료되었습니다 → meetingId={}", meetingId);
     }
