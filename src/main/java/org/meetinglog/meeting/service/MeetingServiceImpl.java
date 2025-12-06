@@ -6,10 +6,7 @@ import org.meetinglog.elasticsearch.MeetingLogRepository;
 import org.meetinglog.jpa.entity.*;
 import org.meetinglog.jpa.repository.FileMstRepository;
 import org.meetinglog.jpa.repository.MeetingParticipantRepository;
-import org.meetinglog.meeting.dto.MeetingAudioResponse;
-import org.meetinglog.meeting.dto.MeetingMstRequest;
-import org.meetinglog.meeting.dto.MeetingParticipantRequest;
-import org.meetinglog.meeting.dto.MeetingSearchResponse;
+import org.meetinglog.meeting.dto.*;
 import org.meetinglog.jpa.repository.MeetingDtlRepository;
 import org.meetinglog.jpa.repository.MeetingMstRepository;
 import org.springframework.data.domain.Page;
@@ -20,14 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartFile;
 
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -134,7 +129,7 @@ public class MeetingServiceImpl implements MeetingService {
 
     @Transactional
     @Override
-    public Long attachAudioToMeeting(Long meetingId, MultipartFile file) {
+    public void attachAudioToMeeting(Long meetingId, MultipartFile file) {
 
         var mst = meetingMstRepository.findById(meetingId)
                 .orElseThrow(() -> new IllegalArgumentException("회의 없음"));
@@ -148,7 +143,6 @@ public class MeetingServiceImpl implements MeetingService {
 
         meetingDtlRepository.save(dtl);
 
-        return meetingId;
     }
 
     @Override
@@ -169,6 +163,93 @@ public class MeetingServiceImpl implements MeetingService {
                 .status(mst.getMeetingState())
                 .build();
     }
+
+    @Override
+    public List<MeetingListResponse> getMeetingList() {
+
+        List<MeetingMst> list = meetingMstRepository.findAll(
+                Sort.by(Sort.Direction.DESC, "meetingDate")
+        );
+
+        return list.stream().map(m -> {
+
+            // 회의 상세 가져오기
+            MeetingDtl dtl = meetingDtlRepository.findById(m.getMeetingId()).orElse(null);
+
+            // 참여자 수 계산
+            int participantCount =
+                    meetingParticipantRepository.findByIdMeetingId(m.getMeetingId()).size();
+
+            return MeetingListResponse.builder()
+                    .meetingId(m.getMeetingId())
+                    .meetingName(m.getMeetingName())
+                    .meetingState(m.getMeetingState())
+                    .meetingDate(m.getMeetingDate().toLocalDate().toString())
+                    .meetingTime(m.getMeetingDate().toLocalTime().toString())
+                    .meetingDuration(m.getMeetingDuration())
+                    .participantCount(participantCount)
+                    .meetingSummary(dtl != null ? dtl.getMeetingSummary() : null)
+                    .build();
+
+        }).toList();
+    }
+
+    @Transactional
+    @Override
+    public void updateMeeting(Long meetingId, MeetingUpdateRequest req) {
+
+        // 1) 회의 마스터 정보 수정
+        MeetingMst mst = meetingMstRepository.findById(meetingId)
+                .orElseThrow(() -> new IllegalArgumentException("회의를 찾을 수 없습니다."));
+
+        if (req.getMeetingName() != null) mst.setMeetingName(req.getMeetingName());
+        if (req.getMeetingDate() != null) mst.setMeetingDate(req.getMeetingDate());
+        if (req.getMeetingDuration() != null) mst.setMeetingDuration(req.getMeetingDuration());
+        if (req.getMeetingState() != null) mst.setMeetingState(req.getMeetingState());
+
+        meetingMstRepository.save(mst);
+
+        // 2) 회의 상세 수정
+        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+                .orElseThrow(() -> new IllegalArgumentException("상세정보 없음"));
+
+        if (req.getMeetingStt() != null) dtl.setMeetingStt(req.getMeetingStt());
+        if (req.getMeetingSummary() != null) dtl.setMeetingSummary(req.getMeetingSummary());
+
+        if (req.getKeyPoints() != null)
+            dtl.setKeyPoints(String.join("\n", req.getKeyPoints()));
+
+        if (req.getActionItems() != null)
+            dtl.setActionItems(String.join("\n", req.getActionItems()));
+
+        if (req.getLanguage() != null) dtl.setLanguage(req.getLanguage());
+
+        meetingDtlRepository.save(dtl);
+
+        // 3) 참석자 수정 로직 — 전체 교체 방식
+        if (req.getParticipants() != null) {
+
+            // 기존 참석자 모두 삭제
+            List<MeetingParticipant> oldMembers =
+                    meetingParticipantRepository.findByIdMeetingId(meetingId);
+            meetingParticipantRepository.deleteAll(oldMembers);
+
+            // 새롭게 다시 등록
+            for (MeetingParticipantRequest p : req.getParticipants()) {
+
+                MeetingParticipantId id = new MeetingParticipantId(meetingId, p.getUserId());
+
+                MeetingParticipant newMember = MeetingParticipant.builder()
+                        .id(id)
+                        .meeting(mst)
+                        .userName(p.getUserName())
+                        .build();
+
+                meetingParticipantRepository.save(newMember);
+            }
+        }
+    }
+
 
 
 

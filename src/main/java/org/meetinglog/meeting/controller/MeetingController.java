@@ -43,6 +43,12 @@ public class MeetingController {
         return ApiResponse.success(res, "회의 상세 조회 성공");
     }
 
+    @GetMapping("/list")
+    public ApiResponse<List<MeetingListResponse>> getMeetingList() {
+
+        List<MeetingListResponse> list = meetingService.getMeetingList();
+        return ApiResponse.success(list, "회의 전체 목록 조회 성공");
+    }
 
 
 
@@ -57,6 +63,18 @@ public class MeetingController {
 
         return ApiResponse.success("PROCESSING", "AI 분석이 시작되었습니다.");
     }
+
+    @PutMapping("/{meetingId}")
+    public ApiResponse<String> updateMeeting(
+            @PathVariable Long meetingId,
+            @RequestBody MeetingUpdateRequest request
+    ) {
+
+        meetingService.updateMeeting(meetingId, request);
+
+        return ApiResponse.success("회의가 성공적으로 수정되었습니다.");
+    }
+
 
 
     @GetMapping("/search")
