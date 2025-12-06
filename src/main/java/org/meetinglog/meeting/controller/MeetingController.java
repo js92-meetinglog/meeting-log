@@ -15,6 +15,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -126,4 +127,9 @@ public class MeetingController {
 
         return ApiResponse.success("MOCK AI 저장 완료");
     }
+
+  @GetMapping("/{meetingId}/file-download")
+  public ResponseEntity<Resource> getMeetingFile(@PathVariable Long meetingId) {
+    return meetingService.getMeetingFile(meetingId);
+  }
 }

@@ -1,6 +1,16 @@
 package org.meetinglog.meeting.service;
 
+import static org.meetinglog.common.enums.ErrorMessage.FILE_DOWNLOAD_ERROR;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import lombok.AllArgsConstructor;
+import org.meetinglog.common.enums.ErrorMessage;
+import org.meetinglog.common.exception.BusinessException;
 import org.meetinglog.elasticsearch.MeetingDocument;
 import org.meetinglog.elasticsearch.MeetingDocumentRepository;
 import org.meetinglog.jpa.entity.*;
@@ -9,10 +19,14 @@ import org.meetinglog.jpa.repository.MeetingParticipantRepository;
 import org.meetinglog.meeting.dto.*;
 import org.meetinglog.jpa.repository.MeetingDtlRepository;
 import org.meetinglog.jpa.repository.MeetingMstRepository;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -99,7 +113,43 @@ public class MeetingServiceImpl implements MeetingService {
                 .build();
     }
 
-    private Page<MeetingDocument> searchByConditions(String keyword, List<String> participants,
+  @Override
+  public ResponseEntity<Resource> getMeetingFile(Long meetingId) {
+
+    MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+        .orElseThrow(() -> new BusinessException(ErrorMessage.UNKNOWN_MEETING_ERROR.getMessage()));
+
+    if (dtl.getFile() == null) {
+      throw new BusinessException(ErrorMessage.UNKNOWN_FILE_ERROR.getMessage());
+    }
+    FileMst fileMst = fileMstRepository.findById(dtl.getFile().getFileId())
+        .orElseThrow(() -> new BusinessException(ErrorMessage.UNKNOWN_FILE_ERROR.getMessage()));
+
+    try {
+      Path path = Paths.get(fileMst.getFilePath());
+
+      if (!Files.exists(path)) {
+        throw new BusinessException(ErrorMessage.UNKNOWN_FILE_ERROR.getMessage());
+      }
+      byte[] data = Files.readAllBytes(path);
+      Resource resource = new ByteArrayResource(data);
+
+      String originalFileName = fileMst.getOriginFileNm();
+      String encodedFileName = URLEncoder.encode(originalFileName, StandardCharsets.UTF_8)
+          .replaceAll("\\+", "%20");
+
+      return ResponseEntity.ok()
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
+          .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(path))
+          .contentLength(Files.size(path))
+          .body(resource);
+
+    } catch (IOException e) {
+      throw new BusinessException(FILE_DOWNLOAD_ERROR.getMessage());
+    }
+  }
+
+  private Page<MeetingDocument> searchByConditions(String keyword, List<String> participants,
                                                    LocalDateTime startDate, LocalDateTime endDate,
                                                    Pageable pageable) {
 

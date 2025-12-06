@@ -22,7 +22,10 @@ public enum ErrorMessage {
     ,SIGNUP_FAILED("회원가입에 실패했습니다.")
     ,DUPLICATE_ID("이미 존재하는 아이디입니다.")
     ,TOKEN_ERROR("정상적이지 않은 토큰입니다.")
-    ,DB_PROCEDURES_ERROR("프로시저 오류가 발생했습니다.");
+    ,DB_PROCEDURES_ERROR("프로시저 오류가 발생했습니다.")
+    ,FILE_DOWNLOAD_ERROR("파일 다운로드 중 오류가 발생했습니다.")
+    ,UNKNOWN_FILE_ERROR("파일 정보를 찾을 수 없습니다.")
+    ,UNKNOWN_MEETING_ERROR("회의 정보를 찾을 수 없습니다.");
 
     private final String message;
 

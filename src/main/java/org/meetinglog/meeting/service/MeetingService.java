@@ -1,26 +1,30 @@
 package org.meetinglog.meeting.service;
 
+import org.springframework.core.io.Resource;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.meetinglog.meeting.dto.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface MeetingService {
 
-    Long createMeeting(MeetingMstRequest req);
+  Long createMeeting(MeetingMstRequest req);
 
-    List<MeetingListResponse> getMeetingList();
+  List<MeetingListResponse> getMeetingList();
 
-    void attachAudioToMeeting(Long meetingId, MultipartFile file);
+  void attachAudioToMeeting(Long meetingId, MultipartFile file);
 
-    MeetingAudioResponse getMeeting(Long meetingId);
+  MeetingAudioResponse getMeeting(Long meetingId);
 
-    void updateMeeting(Long meetingId, MeetingUpdateRequest request);
+  void updateMeeting(Long meetingId, MeetingUpdateRequest request);
 
 
-    MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
-                                              LocalDate startDate, LocalDate endDate,
-                                              int page, int size);
+  MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
+      LocalDate startDate, LocalDate endDate,
+      int page, int size);
+
+  ResponseEntity<Resource> getMeetingFile(Long meetingId);
 }
 
