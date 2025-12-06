@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.meetinglog.meeting.dto.MeetingAudioResponse;
+import org.meetinglog.meeting.dto.MeetingListResponse;
 import org.meetinglog.meeting.dto.MeetingMstRequest;
 import org.meetinglog.meeting.dto.MeetingSearchResponse;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 public interface MeetingService {
 
     Long createMeeting(MeetingMstRequest req);
+
+    List<MeetingListResponse> getMeetingList();
 
     Long attachAudioToMeeting(Long meetingId, MultipartFile file);
 

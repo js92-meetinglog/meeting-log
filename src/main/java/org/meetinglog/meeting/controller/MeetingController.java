@@ -43,6 +43,12 @@ public class MeetingController {
         return ApiResponse.success(res, "회의 상세 조회 성공");
     }
 
+    @GetMapping("/list")
+    public ApiResponse<List<MeetingListResponse>> getMeetingList() {
+
+        List<MeetingListResponse> list = meetingService.getMeetingList();
+        return ApiResponse.success(list, "회의 전체 목록 조회 성공");
+    }
 
 
 

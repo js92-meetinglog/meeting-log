@@ -6,10 +6,7 @@ import org.meetinglog.elasticsearch.MeetingLogRepository;
 import org.meetinglog.jpa.entity.*;
 import org.meetinglog.jpa.repository.FileMstRepository;
 import org.meetinglog.jpa.repository.MeetingParticipantRepository;
-import org.meetinglog.meeting.dto.MeetingAudioResponse;
-import org.meetinglog.meeting.dto.MeetingMstRequest;
-import org.meetinglog.meeting.dto.MeetingParticipantRequest;
-import org.meetinglog.meeting.dto.MeetingSearchResponse;
+import org.meetinglog.meeting.dto.*;
 import org.meetinglog.jpa.repository.MeetingDtlRepository;
 import org.meetinglog.jpa.repository.MeetingMstRepository;
 import org.springframework.data.domain.Page;
@@ -169,6 +166,37 @@ public class MeetingServiceImpl implements MeetingService {
                 .status(mst.getMeetingState())
                 .build();
     }
+
+    @Override
+    public List<MeetingListResponse> getMeetingList() {
+
+        List<MeetingMst> list = meetingMstRepository.findAll(
+                Sort.by(Sort.Direction.DESC, "meetingDate")
+        );
+
+        return list.stream().map(m -> {
+
+            // 회의 상세 가져오기
+            MeetingDtl dtl = meetingDtlRepository.findById(m.getMeetingId()).orElse(null);
+
+            // 참여자 수 계산
+            int participantCount =
+                    meetingParticipantRepository.findByIdMeetingId(m.getMeetingId()).size();
+
+            return MeetingListResponse.builder()
+                    .meetingId(m.getMeetingId())
+                    .meetingName(m.getMeetingName())
+                    .meetingState(m.getMeetingState())
+                    .meetingDate(m.getMeetingDate().toLocalDate().toString())
+                    .meetingTime(m.getMeetingDate().toLocalTime().toString())
+                    .meetingDuration(m.getMeetingDuration())
+                    .participantCount(participantCount)
+                    .meetingSummary(dtl != null ? dtl.getMeetingSummary() : null)
+                    .build();
+
+        }).toList();
+    }
+
 
 
 
