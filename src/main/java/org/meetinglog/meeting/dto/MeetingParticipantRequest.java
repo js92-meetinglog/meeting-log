@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MeetingParticipantRequest {
-    private Long userId;
+    private String unqId;
     private String userName;
 }
 

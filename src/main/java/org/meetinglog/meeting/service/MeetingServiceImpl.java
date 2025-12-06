@@ -65,7 +65,7 @@ public class MeetingServiceImpl implements MeetingService {
         if (req.getParticipants() != null) {
             req.getParticipants().forEach(p -> {
                 MeetingParticipant mp = MeetingParticipant.builder()
-                        .id(new MeetingParticipantId(mst.getMeetingId(), p.getUserId()))
+                        .id(new MeetingParticipantId(mst.getMeetingId(), p.getUnqId()))
                         .meeting(mst)
                         .userName(p.getUserName())
                         .build();
@@ -287,7 +287,7 @@ public class MeetingServiceImpl implements MeetingService {
             // 새롭게 다시 등록
             for (MeetingParticipantRequest p : req.getParticipants()) {
 
-                MeetingParticipantId id = new MeetingParticipantId(meetingId, p.getUserId());
+                MeetingParticipantId id = new MeetingParticipantId(meetingId, p.getUnqId());
 
                 MeetingParticipant newMember = MeetingParticipant.builder()
                         .id(id)

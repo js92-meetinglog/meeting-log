@@ -14,5 +14,5 @@ import java.io.Serializable;
 public class MeetingParticipantId implements Serializable {
 
     private Long meetingId;
-    private Long userId;
+    private String unqId;
 }
