@@ -64,6 +64,18 @@ public class MeetingController {
         return ApiResponse.success("PROCESSING", "AI 분석이 시작되었습니다.");
     }
 
+    @PutMapping("/{meetingId}")
+    public ApiResponse<String> updateMeeting(
+            @PathVariable Long meetingId,
+            @RequestBody MeetingUpdateRequest request
+    ) {
+
+        meetingService.updateMeeting(meetingId, request);
+
+        return ApiResponse.success("회의가 성공적으로 수정되었습니다.");
+    }
+
+
 
     @GetMapping("/search")
     public ApiResponse<MeetingSearchResponse> searchMeetings(
