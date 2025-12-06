@@ -12,4 +12,6 @@ public interface UserMstRepository extends JpaRepository<UserMst, Long> {
   Optional<UserMst> findByUserIdAndUseYn(String userId, String useYn);
 
   Optional<Object> findByUserId(String userId);
+
+  Optional<UserMst> findByUnqId(String unqId);
 }

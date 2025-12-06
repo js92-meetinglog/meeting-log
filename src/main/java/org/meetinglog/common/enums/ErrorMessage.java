@@ -25,7 +25,8 @@ public enum ErrorMessage {
     ,DB_PROCEDURES_ERROR("프로시저 오류가 발생했습니다.")
     ,FILE_DOWNLOAD_ERROR("파일 다운로드 중 오류가 발생했습니다.")
     ,UNKNOWN_FILE_ERROR("파일 정보를 찾을 수 없습니다.")
-    ,UNKNOWN_MEETING_ERROR("회의 정보를 찾을 수 없습니다.");
+    ,UNKNOWN_MEETING_ERROR("회의 정보를 찾을 수 없습니다.")
+    ,TOKEN_INFO_ERROR("토큰에 해당하는 유저를 찾을 수 없습니다.");
 
     private final String message;
 
