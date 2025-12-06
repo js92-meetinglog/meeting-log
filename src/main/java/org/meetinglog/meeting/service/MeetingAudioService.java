@@ -53,6 +53,7 @@ public class MeetingAudioService {
         meetingMstRepository.save(mst);
 
         MeetingDocument document = MeetingDocument.builder()
+            .id(String.valueOf(meetingId))
             .meetingId(String.valueOf(meetingId))
             .title(mst.getMeetingName())
             .meetingDate(mst.getMeetingDate())
