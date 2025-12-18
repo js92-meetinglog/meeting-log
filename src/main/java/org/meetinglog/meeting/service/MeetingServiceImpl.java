@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.meetinglog.common.enums.ErrorMessage;
 import org.meetinglog.common.exception.BusinessException;
@@ -41,77 +44,96 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 public class MeetingServiceImpl implements MeetingService {
-    private MeetingMstRepository meetingMstRepository;
-    private MeetingDtlRepository meetingDtlRepository;
-    private FileMstRepository fileMstRepository;
-    private MeetingDocumentRepository meetingDocumentRepository;
-    private final FileStorageService fileStorageService;
-    private final MeetingParticipantRepository meetingParticipantRepository;
+
+  private MeetingMstRepository meetingMstRepository;
+  private MeetingDtlRepository meetingDtlRepository;
+  private FileMstRepository fileMstRepository;
+  private MeetingDocumentRepository meetingDocumentRepository;
+  private final FileStorageService fileStorageService;
+  private final MeetingParticipantRepository meetingParticipantRepository;
 
 
-    @Transactional
-    @Override
-    public Long createMeeting(MeetingMstRequest req) {
+  @Transactional
+  @Override
+  public Long createMeeting(MeetingMstRequest req) {
 
-        MeetingMst mst = MeetingMst.builder()
-                .meetingName(req.getMeetingName())
-                .meetingState("PROCESSING")
-                .meetingDate(LocalDateTime.now())
-                .meetingDuration(0)
-                .build();
+    MeetingMst mst = MeetingMst.builder()
+        .meetingName(req.getMeetingName())
+        .meetingState("PROCESSING")
+        .meetingDate(LocalDateTime.now())
+        .meetingDuration(0)
+        .build();
 
-        meetingMstRepository.save(mst);
+    meetingMstRepository.save(mst);
 
-        if (req.getParticipants() != null) {
-            req.getParticipants().forEach(p -> {
-                MeetingParticipant mp = MeetingParticipant.builder()
-                        .id(new MeetingParticipantId(mst.getMeetingId(), p.getUnqId()))
-                        .meeting(mst)
-                        .userName(p.getUserName())
-                        .build();
+    Long meetingId = mst.getMeetingId();
 
-                meetingParticipantRepository.save(mp);
-            });
-        }
+    if (req.getParticipants() != null) {
+      req.getParticipants().forEach(p -> {
+        MeetingParticipant mp = MeetingParticipant.builder()
+            .id(new MeetingParticipantId(meetingId, p.getUnqId()))
+            .meeting(mst)
+            .userName(p.getUserName())
+            .build();
 
-        MeetingDtl dtl = MeetingDtl.builder()
-                .meeting(mst)
-                .build();
-
-        meetingDtlRepository.save(dtl);
-
-        return mst.getMeetingId();
+        meetingParticipantRepository.save(mp);
+      });
     }
 
+    MeetingDtl dtl = MeetingDtl.builder()
+        .meeting(mst)
+        .build();
 
-    @Override
-    public MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
-                                              LocalDate startDate, LocalDate endDate,
-                                              int page, int size) {
+    meetingDtlRepository.save(dtl);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "meetingDate"));
+    List<String> participantNames = Optional.ofNullable(req.getParticipants())
+        .orElse(Collections.emptyList()).stream()
+        .map(MeetingParticipantRequest::getUserName)
+        .toList();
 
-        LocalDateTime startDateTime = null;
-        LocalDateTime endDateTime = null;
+    MeetingDocument document = MeetingDocument.builder()
+        .id(String.valueOf(meetingId))
+        .meetingId(String.valueOf(meetingId))
+        .title(mst.getMeetingName())
+        .meetingDate(mst.getMeetingDate())
+        .participants(participantNames)
+        .build();
 
-        if (startDate != null) {
-            startDateTime = startDate.atStartOfDay();
-        }
-        if (endDate != null) {
-            endDateTime = endDate.atTime(LocalTime.MAX);
-        }
+    meetingDocumentRepository.save(document);
 
-        Page<MeetingDocument> result = searchByConditions(keyword, participants, startDateTime, endDateTime, pageable);
+    return meetingId;
+  }
 
-        return MeetingSearchResponse.builder()
-                .meetings(result.getContent())
-                .totalCount(result.getTotalElements())
-                .currentPage(result.getNumber())
-                .totalPages(result.getTotalPages())
-                .hasNext(result.hasNext())
-                .hasPrevious(result.hasPrevious())
-                .build();
+
+  @Override
+  public MeetingSearchResponse searchMeetings(String keyword, List<String> participants,
+      LocalDate startDate, LocalDate endDate,
+      int page, int size) {
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "meetingDate"));
+
+    LocalDateTime startDateTime = null;
+    LocalDateTime endDateTime = null;
+
+    if (startDate != null) {
+      startDateTime = startDate.atStartOfDay();
     }
+    if (endDate != null) {
+      endDateTime = endDate.atTime(LocalTime.MAX);
+    }
+
+    Page<MeetingDocument> result = searchByConditions(keyword, participants, startDateTime,
+        endDateTime, pageable);
+
+    return MeetingSearchResponse.builder()
+        .meetings(result.getContent())
+        .totalCount(result.getTotalElements())
+        .currentPage(result.getNumber())
+        .totalPages(result.getTotalPages())
+        .hasNext(result.hasNext())
+        .hasPrevious(result.hasPrevious())
+        .build();
+  }
 
   @Override
   public ResponseEntity<Resource> getMeetingFile(Long meetingId) {
@@ -139,7 +161,8 @@ public class MeetingServiceImpl implements MeetingService {
           .replaceAll("\\+", "%20");
 
       return ResponseEntity.ok()
-          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
+          .header(HttpHeaders.CONTENT_DISPOSITION,
+              "attachment; filename=\"" + encodedFileName + "\"")
           .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(path))
           .contentLength(Files.size(path))
           .body(resource);
@@ -150,156 +173,194 @@ public class MeetingServiceImpl implements MeetingService {
   }
 
   private Page<MeetingDocument> searchByConditions(String keyword, List<String> participants,
-                                                   LocalDateTime startDate, LocalDateTime endDate,
-                                                   Pageable pageable) {
+      LocalDateTime startDate, LocalDateTime endDate,
+      Pageable pageable) {
 
-        boolean hasKeyword = StringUtils.hasText(keyword);
-        boolean hasParticipants = participants != null && !participants.isEmpty();
-        boolean hasDateRange = startDate != null && endDate != null;
+    boolean hasKeyword = StringUtils.hasText(keyword);
+    boolean hasParticipants = participants != null && !participants.isEmpty();
+    boolean hasDateRange = startDate != null && endDate != null;
 
-        if (hasKeyword && hasParticipants && hasDateRange) {
-            return meetingDocumentRepository.findByKeywordAndParticipantsAndDateRange(keyword, participants, startDate, endDate, pageable);
-        } else if (hasKeyword && hasParticipants) {
-            return meetingDocumentRepository.findByKeywordAndParticipants(keyword, participants, pageable);
-        } else if (hasKeyword && hasDateRange) {
-            return meetingDocumentRepository.findByKeywordAndDateRange(keyword, startDate, endDate, pageable);
-        } else if (hasParticipants && hasDateRange) {
-            return meetingDocumentRepository.findByParticipantsAndDateRange(participants, startDate, endDate, pageable);
-        } else if (hasKeyword) {
-            return meetingDocumentRepository.findByKeyword(keyword, pageable);
-        } else if (hasParticipants) {
-            return meetingDocumentRepository.findByParticipants(participants, pageable);
-        } else if (hasDateRange) {
-            return meetingDocumentRepository.findByDateRange(startDate, endDate, pageable);
-        } else {
-            return meetingDocumentRepository.findAll(pageable);
-        }
+    if (hasKeyword && hasParticipants && hasDateRange) {
+      return meetingDocumentRepository.findByKeywordAndParticipantsAndDateRange(keyword,
+          participants, startDate, endDate, pageable);
+    } else if (hasKeyword && hasParticipants) {
+      return meetingDocumentRepository.findByKeywordAndParticipants(keyword, participants,
+          pageable);
+    } else if (hasKeyword && hasDateRange) {
+      return meetingDocumentRepository.findByKeywordAndDateRange(keyword, startDate, endDate,
+          pageable);
+    } else if (hasParticipants && hasDateRange) {
+      return meetingDocumentRepository.findByParticipantsAndDateRange(participants, startDate,
+          endDate, pageable);
+    } else if (hasKeyword) {
+      return meetingDocumentRepository.findByKeyword(keyword, pageable);
+    } else if (hasParticipants) {
+      return meetingDocumentRepository.findByParticipants(participants, pageable);
+    } else if (hasDateRange) {
+      return meetingDocumentRepository.findByDateRange(startDate, endDate, pageable);
+    } else {
+      return meetingDocumentRepository.findAll(pageable);
+    }
+  }
+
+
+  @Transactional
+  @Override
+  public void attachAudioToMeeting(Long meetingId, MultipartFile file) {
+
+    var mst = meetingMstRepository.findById(meetingId)
+        .orElseThrow(() -> new IllegalArgumentException("회의 없음"));
+
+    FileMst savedFile = fileStorageService.saveFile(file);
+
+    MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+        .orElse(MeetingDtl.builder().meeting(mst).build());
+
+    dtl.setFile(savedFile);
+
+    meetingDtlRepository.save(dtl);
+
+  }
+
+  @Override
+  public MeetingAudioResponse getMeeting(Long meetingId) {
+
+    MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+        .orElseThrow(() -> new IllegalArgumentException("회의 상세가 없습니다."));
+
+    MeetingMst mst = dtl.getMeeting();
+
+    return MeetingAudioResponse.builder()
+        .meetingId(mst.getMeetingId())
+        .transcript(dtl.getMeetingStt())
+        .summary(dtl.getMeetingSummary())
+        .keyPoints(dtl.getKeyPoints() != null ? List.of(dtl.getKeyPoints().split("\n")) : null)
+        .actionItems(
+            dtl.getActionItems() != null ? List.of(dtl.getActionItems().split("\n")) : null)
+        .language(dtl.getLanguage())
+        .status(mst.getMeetingState())
+        .build();
+  }
+
+  @Override
+  public List<MeetingListResponse> getMeetingList() {
+
+    List<MeetingMst> list = meetingMstRepository.findAll(
+        Sort.by(Sort.Direction.DESC, "meetingDate")
+    );
+
+    return list.stream().map(m -> {
+
+      // 회의 상세 가져오기
+      MeetingDtl dtl = meetingDtlRepository.findById(m.getMeetingId()).orElse(null);
+
+      // 참여자 수 계산
+      int participantCount =
+          meetingParticipantRepository.findByIdMeetingId(m.getMeetingId()).size();
+
+      return MeetingListResponse.builder()
+          .meetingId(m.getMeetingId())
+          .meetingName(m.getMeetingName())
+          .meetingState(m.getMeetingState())
+          .meetingDate(m.getMeetingDate().toLocalDate().toString())
+          .meetingTime(m.getMeetingDate().toLocalTime().toString())
+          .meetingDuration(m.getMeetingDuration())
+          .participantCount(participantCount)
+          .meetingSummary(dtl != null ? dtl.getMeetingSummary() : null)
+          .build();
+
+    }).toList();
+  }
+
+  @Transactional
+  @Override
+  public void updateMeeting(Long meetingId, MeetingUpdateRequest req) {
+
+    // 1) 회의 마스터 정보 수정
+    MeetingMst mst = meetingMstRepository.findById(meetingId)
+        .orElseThrow(() -> new IllegalArgumentException("회의를 찾을 수 없습니다."));
+
+    if (req.getMeetingName() != null) {
+      mst.setMeetingName(req.getMeetingName());
+    }
+    if (req.getMeetingDate() != null) {
+      mst.setMeetingDate(req.getMeetingDate());
+    }
+    if (req.getMeetingDuration() != null) {
+      mst.setMeetingDuration(req.getMeetingDuration());
+    }
+    if (req.getMeetingState() != null) {
+      mst.setMeetingState(req.getMeetingState());
     }
 
+    meetingMstRepository.save(mst);
 
-    @Transactional
-    @Override
-    public void attachAudioToMeeting(Long meetingId, MultipartFile file) {
+    // 2) 회의 상세 수정
+    MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
+        .orElseThrow(() -> new IllegalArgumentException("상세정보 없음"));
 
-        var mst = meetingMstRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("회의 없음"));
-
-        FileMst savedFile = fileStorageService.saveFile(file);
-
-        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
-                .orElse(MeetingDtl.builder().meeting(mst).build());
-
-        dtl.setFile(savedFile);
-
-        meetingDtlRepository.save(dtl);
-
+    if (req.getMeetingStt() != null) {
+      dtl.setMeetingStt(req.getMeetingStt());
+    }
+    if (req.getMeetingSummary() != null) {
+      dtl.setMeetingSummary(req.getMeetingSummary());
     }
 
-    @Override
-    public MeetingAudioResponse getMeeting(Long meetingId) {
-
-        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("회의 상세가 없습니다."));
-
-        MeetingMst mst = dtl.getMeeting();
-
-        return MeetingAudioResponse.builder()
-                .meetingId(mst.getMeetingId())
-                .transcript(dtl.getMeetingStt())
-                .summary(dtl.getMeetingSummary())
-                .keyPoints(dtl.getKeyPoints() != null ? List.of(dtl.getKeyPoints().split("\n")) : null)
-                .actionItems(dtl.getActionItems() != null ? List.of(dtl.getActionItems().split("\n")) : null)
-                .language(dtl.getLanguage())
-                .status(mst.getMeetingState())
-                .build();
+    if (req.getKeyPoints() != null) {
+      dtl.setKeyPoints(String.join("\n", req.getKeyPoints()));
     }
 
-    @Override
-    public List<MeetingListResponse> getMeetingList() {
-
-        List<MeetingMst> list = meetingMstRepository.findAll(
-                Sort.by(Sort.Direction.DESC, "meetingDate")
-        );
-
-        return list.stream().map(m -> {
-
-            // 회의 상세 가져오기
-            MeetingDtl dtl = meetingDtlRepository.findById(m.getMeetingId()).orElse(null);
-
-            // 참여자 수 계산
-            int participantCount =
-                    meetingParticipantRepository.findByIdMeetingId(m.getMeetingId()).size();
-
-            return MeetingListResponse.builder()
-                    .meetingId(m.getMeetingId())
-                    .meetingName(m.getMeetingName())
-                    .meetingState(m.getMeetingState())
-                    .meetingDate(m.getMeetingDate().toLocalDate().toString())
-                    .meetingTime(m.getMeetingDate().toLocalTime().toString())
-                    .meetingDuration(m.getMeetingDuration())
-                    .participantCount(participantCount)
-                    .meetingSummary(dtl != null ? dtl.getMeetingSummary() : null)
-                    .build();
-
-        }).toList();
+    if (req.getActionItems() != null) {
+      dtl.setActionItems(String.join("\n", req.getActionItems()));
     }
 
-    @Transactional
-    @Override
-    public void updateMeeting(Long meetingId, MeetingUpdateRequest req) {
-
-        // 1) 회의 마스터 정보 수정
-        MeetingMst mst = meetingMstRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("회의를 찾을 수 없습니다."));
-
-        if (req.getMeetingName() != null) mst.setMeetingName(req.getMeetingName());
-        if (req.getMeetingDate() != null) mst.setMeetingDate(req.getMeetingDate());
-        if (req.getMeetingDuration() != null) mst.setMeetingDuration(req.getMeetingDuration());
-        if (req.getMeetingState() != null) mst.setMeetingState(req.getMeetingState());
-
-        meetingMstRepository.save(mst);
-
-        // 2) 회의 상세 수정
-        MeetingDtl dtl = meetingDtlRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("상세정보 없음"));
-
-        if (req.getMeetingStt() != null) dtl.setMeetingStt(req.getMeetingStt());
-        if (req.getMeetingSummary() != null) dtl.setMeetingSummary(req.getMeetingSummary());
-
-        if (req.getKeyPoints() != null)
-            dtl.setKeyPoints(String.join("\n", req.getKeyPoints()));
-
-        if (req.getActionItems() != null)
-            dtl.setActionItems(String.join("\n", req.getActionItems()));
-
-        if (req.getLanguage() != null) dtl.setLanguage(req.getLanguage());
-
-        meetingDtlRepository.save(dtl);
-
-        // 3) 참석자 수정 로직 — 전체 교체 방식
-        if (req.getParticipants() != null) {
-
-            // 기존 참석자 모두 삭제
-            List<MeetingParticipant> oldMembers =
-                    meetingParticipantRepository.findByIdMeetingId(meetingId);
-            meetingParticipantRepository.deleteAll(oldMembers);
-
-            // 새롭게 다시 등록
-            for (MeetingParticipantRequest p : req.getParticipants()) {
-
-                MeetingParticipantId id = new MeetingParticipantId(meetingId, p.getUnqId());
-
-                MeetingParticipant newMember = MeetingParticipant.builder()
-                        .id(id)
-                        .meeting(mst)
-                        .userName(p.getUserName())
-                        .build();
-
-                meetingParticipantRepository.save(newMember);
-            }
-        }
+    if (req.getLanguage() != null) {
+      dtl.setLanguage(req.getLanguage());
     }
 
+    meetingDtlRepository.save(dtl);
+
+    // 3) 참석자 수정 로직 — 전체 교체 방식
+    if (req.getParticipants() != null) {
+
+      // 기존 참석자 모두 삭제
+      List<MeetingParticipant> oldMembers =
+          meetingParticipantRepository.findByIdMeetingId(meetingId);
+      meetingParticipantRepository.deleteAll(oldMembers);
+
+      // 새롭게 다시 등록
+      for (MeetingParticipantRequest p : req.getParticipants()) {
+
+        MeetingParticipantId id = new MeetingParticipantId(meetingId, p.getUnqId());
+
+        MeetingParticipant newMember = MeetingParticipant.builder()
+            .id(id)
+            .meeting(mst)
+            .userName(p.getUserName())
+            .build();
+
+        meetingParticipantRepository.save(newMember);
+      }
+    }
+
+    List<String> participantNames = Optional.ofNullable(req.getParticipants())
+        .orElse(Collections.emptyList()).stream()
+        .map(MeetingParticipantRequest::getUserName)
+        .toList();
+
+    MeetingDocument document = MeetingDocument.builder()
+        .id(String.valueOf(meetingId))
+        .meetingId(String.valueOf(meetingId))
+        .title(mst.getMeetingName())
+        .meetingDate(mst.getMeetingDate())
+        .participants(participantNames)
+        .summary(dtl.getMeetingSummary())
+        .transcription(dtl.getMeetingStt())
+        .build();
+
+    meetingDocumentRepository.save(document);
+
+  }
 
 
 
