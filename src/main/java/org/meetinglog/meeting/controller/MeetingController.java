@@ -1,5 +1,6 @@
 package org.meetinglog.meeting.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.meetinglog.common.dto.ApiResponse;
@@ -131,5 +132,38 @@ public class MeetingController {
   @GetMapping("/{meetingId}/file-download")
   public ResponseEntity<Resource> getMeetingFile(@PathVariable Long meetingId) {
     return meetingService.getMeetingFile(meetingId);
+  }
+
+  /**
+   * 회의 내용 텍스트 기반 질의응답 (RAG/LangChain/GPT 기반)
+   * @param meetingId 회의 ID
+   * @param question 회의 내용에 대한 질문
+   * @return 답변 및 근거 텍스트
+   */
+  @Operation(
+    summary = "회의 내용 질의응답",
+    description = "RAG/LangChain/GPT 기반으로 회의 내용에 대한 질문에 답변합니다. 회의록 STT가 완료된 회의에 대해서만 사용 가능합니다. 회의 텍스트는 서버에서 자동으로 조회됩니다."
+  )
+  @GetMapping("/{meetingId}/qa")
+  public ApiResponse<MeetingQaResponse> askMeetingQuestion(
+          @PathVariable Long meetingId,
+          @RequestParam String question
+  ) {
+      try {
+          if (question == null || question.trim().isEmpty()) {
+              return ApiResponse.error(ErrorMessage.QA_QUESTION_REQUIRED.getMessage());
+          }
+
+          MeetingQaResponse response = aiProcessService.askQuestion(meetingId, question);
+          return ApiResponse.success(response);
+
+      } catch (IllegalArgumentException e) {
+          log.error("잘못된 요청: {}", e.getMessage());
+          return ApiResponse.error(e.getMessage());
+
+      } catch (Exception e) {
+          log.error("질의응답 처리 중 오류 발생: ", e);
+          return ApiResponse.error(ErrorMessage.QA_PROCESSING_ERROR.getMessage());
+      }
   }
 }

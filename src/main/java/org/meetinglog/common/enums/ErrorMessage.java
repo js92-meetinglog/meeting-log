@@ -26,7 +26,11 @@ public enum ErrorMessage {
     ,FILE_DOWNLOAD_ERROR("파일 다운로드 중 오류가 발생했습니다.")
     ,UNKNOWN_FILE_ERROR("파일 정보를 찾을 수 없습니다.")
     ,UNKNOWN_MEETING_ERROR("회의 정보를 찾을 수 없습니다.")
-    ,TOKEN_INFO_ERROR("토큰에 해당하는 유저를 찾을 수 없습니다.");
+    ,TOKEN_INFO_ERROR("토큰에 해당하는 유저를 찾을 수 없습니다.")
+    ,QA_QUESTION_REQUIRED("질문을 입력해주세요.")
+    ,QA_MEETING_NOT_FOUND("회의 상세 정보를 찾을 수 없습니다.")
+    ,QA_TEXT_NOT_AVAILABLE("회의 텍스트가 존재하지 않습니다. STT 처리가 완료되지 않았을 수 있습니다.")
+    ,QA_PROCESSING_ERROR("질의응답 처리 중 오류가 발생했습니다.");
 
     private final String message;
 
